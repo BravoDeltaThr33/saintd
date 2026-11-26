@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saint-directory"
+version = "2.2.1"
+description = "Saint Directory (saintd): a retro terminal guide to the saints of the Eastern Orthodox Church"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "BravoDeltaThr33" }]
+keywords = ["orthodox", "saints", "tui", "textual", "terminal"]
+classifiers = [
+    "Environment :: Console :: Curses",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Religion",
+]
+dependencies = [
+    "textual>=8.2,<9",
+    "httpx>=0.24,<1",
+    "textual-image>=0.12,<0.13",
+    "pillow>=10.3",
+]
+
+[project.optional-dependencies]
+voice = ["piper-tts>=1.2"]          # natural neural voices for reading aloud
+
+[project.urls]
+Homepage = "https://github.com/BravoDeltaThr33/saintd"
+Issues = "https://github.com/BravoDeltaThr33/saintd/issues"
+
+[project.scripts]
+saintd = "saintd.cli:main"
+
+[tool.setuptools]
+packages = ["saintd", "saintd.ui"]
+
+[tool.setuptools.package-data]
+saintd = ["*.tcss"]

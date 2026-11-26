@@ -1,0 +1,537 @@
+/* Saint Directory — retro earthy terminal styling.
+   Colours come from the active theme (see themes.py). */
+
+Screen {
+    background: $background;
+    color: $foreground;
+    layout: vertical;
+}
+
+/* ---------------------------------------------------------------- title bar */
+#titlebar {
+    height: 1;
+    background: $primary;
+    color: $background;
+}
+#tb { width: 1fr; height: 1; }
+
+/* ---------------------------------------------------------------- body */
+#body { height: 1fr; }
+
+#rail {
+    width: 22;
+    background: $rail-bg;
+    border-right: tall $panel;
+    padding: 1 1 0 1;
+}
+#rail:focus {
+    border-right: tall $primary;
+}
+#rail-head {
+    color: $muted;
+    text-style: bold;
+    height: 1;
+    margin-bottom: 1;
+    content-align: center middle;
+    width: 100%;
+}
+.rail-tab {
+    height: 3;
+    width: 100%;
+    text-wrap: nowrap;
+    text-overflow: clip;
+    padding: 0 1;
+    content-align: left middle;
+    border: round $panel;
+    color: $foreground 80%;
+    margin-bottom: 0;
+}
+.rail-tab:hover {
+    background: $panel;
+    color: $foreground;
+}
+.rail-tab.-active {
+    background: $primary 20%;
+    border: round $primary;
+    color: $primary;
+    text-style: bold;
+}
+#rail:focus .rail-tab.-active {
+    background: $primary;
+    color: $background;
+    border: round $secondary;
+}
+#rail-spacer { height: 1fr; }
+#rail-emblem { display: none; height: 4; margin-bottom: 1; }
+.-roomy #rail-emblem { height: 6; }
+.-tall #rail-emblem { height: 8; }
+.-xtall #rail-emblem { height: 10; }
+.-fancy #rail-emblem { display: block; }
+.-fancy #rail-head { display: none; }
+#rail-info {
+    height: auto;
+    color: $secondary;
+    border-top: dashed $panel;
+    padding-top: 1;
+    margin-bottom: 1;
+    content-align: center top;
+    text-align: center;
+}
+
+#pages {
+    width: 1fr;
+    height: 100%;
+    padding: 0 1;
+}
+
+/* ---------------------------------------------------------------- panels */
+.panel {
+    border: double $muted;
+    border-title-color: $secondary;
+    border-title-style: bold;
+    border-title-align: left;
+    padding: 0 1;
+    height: auto;
+    background: $surface;
+    margin: 1 0 0 0;
+}
+.hint { color: $muted; margin: 0 0 0 0; }
+.btn-row { height: auto; margin-top: 1; }
+.btn-row Button { margin-right: 1; }
+.btn-row.wrap { layout: horizontal; }
+
+Button {
+    min-width: 10;
+    height: 3;
+    border: tall $panel;
+    background: $panel;
+    color: $foreground;
+    text-style: bold;
+}
+Button:hover { background: $secondary 30%; }
+Button:focus {
+    background: $secondary;
+    color: $background;
+    border: tall $primary;
+    text-style: bold;
+}
+Button.-primary { background: $primary 35%; border: tall $primary 60%; }
+Button.-primary:focus { background: $primary; color: $background; }
+Button.-error { background: $error 35%; border: tall $error 60%; }
+Button.-error:focus { background: $error; color: $background; }
+
+Input {
+    background: $background;
+    border: tall $muted;
+    color: $foreground;
+}
+Input:focus { border: tall $primary; }
+Input > .input--placeholder { color: $muted; }
+
+Select { width: 24; }
+Select > SelectCurrent { background: $background; border: tall $muted; }
+Select:focus > SelectCurrent { border: tall $primary; }
+Select.-textual-compact > SelectCurrent { border: none; background: $panel; padding: 0 1; height: 1; }
+Select.-textual-compact:focus > SelectCurrent { border: none; background: $secondary 45%; }
+Select > SelectOverlay { background: $surface; border: tall $primary; }
+
+Switch { background: $background; border: tall $muted; }
+Switch:focus { border: tall $primary; }
+Switch > .switch--slider { color: $muted; background: $panel; }
+Switch.-on > .switch--slider { color: $primary; }
+
+RadioSet { background: $surface; border: tall $muted; }
+RadioSet:focus { border: tall $primary; }
+RadioSet.inline { layout: horizontal; width: auto; }
+RadioButton { background: $surface; }
+RadioButton > .toggle--button { color: $panel; background: $background; }
+RadioButton.-on > .toggle--button { color: $primary; }
+
+ProgressBar { height: 1; margin: 1 0 0 0; }
+ProgressBar Bar > .bar--bar { color: $primary; background: $panel; }
+ProgressBar Bar > .bar--complete { color: $success; }
+ProgressBar PercentageStatus { color: $secondary; text-style: bold; }
+
+DataTable {
+    background: $surface;
+    height: 1fr;
+    border: double $muted;
+    scrollbar-size-vertical: 1;
+}
+DataTable:focus { border: double $primary; }
+DataTable > .datatable--header { background: $panel; color: $secondary; text-style: bold; }
+DataTable > .datatable--cursor { background: $primary; color: $background; text-style: bold; }
+DataTable > .datatable--odd-row { background: $surface; }
+DataTable > .datatable--even-row { background: $background 60%; }
+DataTable > .datatable--hover { background: $panel; }
+
+OptionList {
+    background: $surface;
+    border: none;
+    height: auto;
+    max-height: 22;
+    padding: 0;
+}
+OptionList > .option-list--option-highlighted { background: $primary; color: $background; text-style: bold; }
+OptionList:focus > .option-list--option-highlighted { background: $primary; color: $background; }
+OptionList > .option-list--option-hover { background: $panel; }
+
+RichLog {
+    background: $background;
+    border: tall $panel;
+    height: 10;
+    margin-top: 1;
+    color: $foreground 80%;
+}
+
+/* ---------------------------------------------------------------- home */
+#home { height: 100%; }
+#banner {
+    width: 100%;
+    content-align: center middle;
+    text-align: center;
+    height: 3;
+    margin-top: 1;
+}
+#tagline {
+    width: 100%;
+    text-align: center;
+    color: $secondary;
+    height: 1;
+    margin-bottom: 0;
+}
+#home-sync { width: 100%; height: 1; color: $accent; text-align: center; }
+#home-main { height: auto; padding-top: 1; }
+#cal-panel, #day-panel, #spot-panel { margin-top: 0; }
+#home-left { width: 34; height: auto; margin-right: 1; }
+#cal-panel { width: 100%; height: auto; }
+#cal { margin-top: 1; }
+#cal-legend { height: 3; margin-top: 1; }
+#day-info { height: 10; margin-top: 1; color: $foreground 90%; }
+#ahead-panel { height: auto; }
+#ahead { height: 16; margin-top: 1; }
+#day-panel { width: 1fr; height: auto; margin-right: 1; }
+#day-head { height: 1; margin-top: 1; color: $secondary; }
+#day-cols { height: 1; margin-top: 1; color: $muted; }
+#day-list { height: 26; max-height: 100%; }
+#home-right { width: 50; height: auto; }
+.-xwide #home-right { width: 62; }
+#spot-panel { height: auto; }
+#spot-top { height: auto; margin-top: 1; }
+#spot-icon { width: 20; height: 10; margin-right: 1; }
+.-xwide #spot-icon { width: 24; height: 12; }
+#spot-name { width: 1fr; }
+#spot-text { height: 8; margin-top: 1; color: $foreground 90%; }
+#spot-hymn { height: auto; max-height: 10; margin-top: 1; color: $secondary; }
+#spot-buttons { margin-bottom: 0; }
+#gospel-panel { height: 16; padding: 0 1; }
+#gospel { height: auto; margin: 1 0; color: $foreground 90%; }
+#home-keys { width: 100%; margin: 1 0; height: auto; }
+.panel.-reading { border-subtitle-color: $accent; border-subtitle-style: bold; }
+/* big terminals: a dashboard that fills the window */
+.-fill #banner, .-fill #tagline { display: none; }
+.-fill.-xtall #banner, .-fill.-xtall #tagline { display: block; }
+.-fill #home-keys { margin: 0; }
+.-xwide #home-keys { display: none; }          /* the status bar shows the keys */
+.-fill #home-main { height: 1fr; }
+.-fill #home-left { height: 100%; }
+.-fill #ahead-panel { height: 1fr; }
+.-fill #ahead { height: 1fr; }
+.-fill #day-panel { height: 100%; }
+.-fill #day-list { height: 1fr; }
+.-fill #home-right { height: 100%; }
+.-fill #spot-panel { height: 3fr; }
+.-fill #spot-text { height: 1fr; min-height: 3; }
+.-fill #gospel-panel { height: 2fr; min-height: 7; }
+/* medium terminals: the saint of the day and the readings go under the calendar and list */
+.-medium #home-main, .-narrow #home-main { layout: grid; grid-size: 2; grid-columns: 34 1fr; grid-rows: auto auto; }
+.-medium #home-right, .-narrow #home-right { column-span: 2; width: 100%; layout: horizontal; }
+.-medium #spot-panel, .-narrow #spot-panel { width: 1fr; margin-right: 1; margin-top: 1; }
+.-medium #gospel-panel, .-narrow #gospel-panel { width: 1fr; height: 100%; min-height: 12; }
+.-medium #day-panel, .-narrow #day-panel { margin-right: 0; height: 100%; }
+.-medium #day-list, .-narrow #day-list { height: 1fr; min-height: 14; }
+/* narrow terminals: everything in one column */
+.-stack #home-main { layout: vertical; }
+.-stack #home-left, .-stack #day-panel, .-stack #home-right { width: 100%; margin-right: 0; }
+.-stack #home-right { layout: vertical; }
+.-stack #spot-panel, .-stack #gospel-panel { width: 100%; margin-right: 0; height: auto; }
+.-stack #day-panel, .-stack #spot-panel { margin-top: 1; }
+.-stack #gospel-panel { max-height: 20; }
+.-stack #day-list { height: 20; }
+.-short #banner, .-short #tagline { display: none; }
+.-short #home-keys { display: none; }
+.-short #spot-icon { height: 8; width: 14; }
+.-short #day-list { height: 14; }
+.-short #cal-legend { display: none; }
+.-short #ahead { height: 9; }
+
+/* ---------------------------------------------------------------- search */
+#search { height: 100%; }
+#query-panel { padding-bottom: 1; }
+#q-row { height: auto; margin-top: 1; }
+#q-row Button { margin-top: 1; }
+#q { width: 1fr; margin-right: 1; }
+.f-row { height: auto; margin-top: 1; }
+.f-label { padding: 1 1 0 1; color: $secondary; text-style: bold; }
+.f-switch-label { color: $foreground 80%; text-style: none; }
+#result-count { height: 1; margin: 1 0 0 0; color: $secondary; }
+#search-body { height: 1fr; }
+#results { margin-top: 0; width: 1fr; height: 100%; }
+#preview { display: none; width: 52; height: 100%; margin: 0 0 0 1; }
+.-wide #preview { display: block; }
+.-xwide #preview { width: 62; }
+#pv-top { height: auto; margin-top: 1; }
+#pv-icon { width: 18; height: 9; margin-right: 1; }
+.-xwide #pv-icon { width: 22; height: 11; }
+#pv-head { width: 1fr; }
+#pv-text { height: 1fr; margin-top: 1; color: $foreground 90%; }
+#pv-hymn { height: auto; max-height: 8; margin-top: 1; color: $secondary; }
+#pv-keys { height: 1; margin-top: 1; }
+
+/* ---------------------------------------------------------------- focus */
+#focus { height: 100%; }
+#focus-bar { height: 1; margin-top: 1; }
+#focus-bar Button { margin-right: 1; min-width: 10; }
+#focus-status { width: 1fr; padding: 0 1; color: $accent; }
+#focus-hero {
+    height: auto;
+    max-height: 16;
+    margin-top: 1;
+    background: $surface;
+    border: double $muted;
+    padding: 0 1;
+}
+#focus-hero.-reading { border: double $accent; }
+#hero-icon { width: 24; height: 12; margin-right: 2; }
+.-xwide #hero-icon { width: 26; height: 13; }
+#hero-card { width: 1fr; height: auto; padding: 1 0; }
+.-short #hero-icon { width: 14; height: 8; }
+.-short #focus-hero { max-height: 10; }
+.-narrow #fx-prev, .-narrow #fx-next, .-narrow #fx-toc { display: none; }
+.-compact #fx-browser, .-compact #fx-refresh { display: none; }
+#focus-body { height: 1fr; }
+#article {
+    width: 1fr;
+    height: 100%;
+    border: double $muted;
+    margin-top: 0;
+    background: $surface;
+}
+#focus-side {
+    width: 50;
+    height: 100%;
+    margin-left: 1;
+    border: double $muted;
+    background: $surface;
+    border-title-color: $secondary;
+    border-title-style: bold;
+    scrollbar-size-vertical: 1;
+}
+.-xwide #focus-side { width: 60; }
+#side-doc { padding: 0 1; }
+#side-cross { height: 3; margin: 1 0 0 0; }
+#iv-cross { height: 3; margin-bottom: 1; }
+MarkdownViewer > MarkdownTableOfContents { background: $panel; width: 34; }
+Markdown { background: $surface; padding: 0 2; }
+MarkdownH1 { color: $primary; text-style: bold; background: $panel; border-bottom: heavy $primary; padding: 0 1; content-align: left middle; }
+MarkdownH2 { color: $secondary; text-style: bold; border-bottom: dashed $muted; margin-top: 1; }
+MarkdownH3 { color: $accent; text-style: bold; }
+MarkdownH4 { color: $secondary; text-style: bold italic; }
+MarkdownBlockQuote { border-left: outer $primary; background: $panel; }
+MarkdownTable { background: $background 40%; }
+MarkdownBlock.-reading { background: $primary 22%; }
+
+/* ---------------------------------------------------------------- settings */
+#settings { height: 100%; }
+#set-cols { height: auto; layout: vertical; }
+#set-col-a, #set-col-b { width: 100%; height: auto; }
+.-wide #set-cols { layout: horizontal; }
+.-wide #set-col-a, .-wide #set-col-b { width: 1fr; }
+.-wide #set-col-a { margin-right: 1; }
+#tts-engine, #tts-voice { width: 1fr; max-width: 56; margin: 1 1 0 0; }
+#tts-rate { width: 20; margin: 1 1 0 0; }
+#tts-get { width: 1fr; max-width: 56; margin: 1 1 0 0; }
+#tts-engines { margin-top: 1; }
+#tts-switches { height: auto; margin-top: 1; }
+#tts-status { height: auto; }
+#tts-progress { margin-top: 1; }
+.set-row { height: auto; margin-top: 1; }
+.s-label { padding: 1 1 0 0; color: $secondary; text-style: bold; width: 20; }
+.sw-label { padding: 1 1 0 1; }
+#theme-set { width: 29; }
+#swatches { width: 1fr; height: auto; padding: 1 0 0 2; }
+.swatch { height: 1; margin-bottom: 0; text-wrap: nowrap; text-overflow: ellipsis; }
+#tr-backend { width: 30; margin-right: 1; }
+#in-libre_key, #in-ollama_model { width: 30; margin-left: 1; }
+#in-mymemory_email, #in-lingva_url, #in-libre_url, #in-ollama_url, #in-contact { width: 1fr; }
+
+#net-timeout { width: 14; }
+#dir-summary { margin-top: 1; }
+#set-stage { color: $accent; height: 1; }
+
+#api-notes { margin: 1 0; }
+#gfx-mode { width: 1fr; max-width: 46; margin: 1 1 0 0; }
+.term-report { margin-top: 1; height: auto; }
+#set-display .sw-row { margin-top: 1; }
+
+/* ---------------------------------------------------------------- reading aloud */
+#readerbar { height: 1; background: $primary 25%; }
+#rb-info { width: 1fr; height: 1; }
+#readerbar Button.-textual-compact { margin: 0 0 0 1; min-width: 4; height: 1; }
+IconView { align: center middle; background: $background 88%; }
+#iv-box { width: 96%; height: 92%; border: double $primary; background: $surface; padding: 1 2; }
+#iv-icon { width: 3fr; height: 100%; }
+#iv-side { width: 2fr; height: 100%; padding: 1 0 0 3; }
+#iv-close { height: 1; width: 96%; text-align: center; }
+VoicePicker { align: center middle; background: $background 70%; }
+#voice-box {
+    width: 86;
+    max-width: 96%;
+    height: auto;
+    max-height: 96%;
+    border: double $primary;
+    background: $surface;
+    padding: 1 2;
+}
+#voice-title { color: $primary; text-style: bold; margin-bottom: 1; }
+#voice-text { margin-bottom: 1; }
+#voice-list { height: auto; max-height: 10; border: tall $muted; }
+#voice-list:focus { border: tall $primary; }
+#voice-status { height: auto; margin-top: 1; }
+
+/* ---------------------------------------------------------------- status bar */
+#statusbar {
+    height: 1;
+    background: $surface;
+    color: $foreground;
+}
+#sb-keys { width: auto; color: $secondary; }
+#sb-sync { width: 1fr; color: $accent; padding: 0 1 0 2; text-align: right; }
+
+/* ---------------------------------------------------------------- modal */
+ConfirmWipe { align: center middle; background: $background 70%; }
+#confirm {
+    width: 64;
+    height: auto;
+    border: double $error;
+    background: $surface;
+    padding: 1 2;
+}
+#confirm-text { margin-bottom: 1; }
+
+Toast { background: $panel; border-left: outer $primary; }
+
+/* ---------------------------------------------------------------- compact controls */
+Switch.mini {
+    border: none;
+    height: 1;
+    width: 6;
+    padding: 0;
+    margin: 1 0 0 0;
+    background: $panel;
+}
+Switch.mini:focus { background: $secondary 40%; }
+.f-row Select { margin: 1 1 0 0; }
+.f-label { padding: 1 1 0 0; }
+Button.-textual-compact {
+    margin: 1 0 0 1;
+    height: 1;
+    border: none;
+    background: $panel;
+    color: $foreground;
+    text-style: bold;
+    min-width: 9;
+}
+Button.-textual-compact:focus, Button.-textual-compact:hover { background: $secondary; color: $background; border: none; }
+RadioSet.inline RadioButton { width: auto; margin-right: 4; }
+RadioSet.inline { height: auto; }
+#tr-backend, #net-timeout { margin-top: 1; }
+
+/* ---------------------------------------------------------------- grids & responsive */
+#filters {
+    grid-size: 4;
+    grid-columns: 1fr 1fr 1fr 1fr;
+    grid-rows: 1;
+    grid-gutter: 1 2;
+    height: auto;
+    margin-top: 1;
+}
+.f-cell { height: 1; width: 100%; }
+.f-cell Select { width: 1fr; margin: 0 1 0 0; }
+.f-cell .f-label { padding: 0 1 0 0; width: auto; }
+.f-cell .f-switch-label { padding: 0 1; }
+.f-cell Switch.mini { margin: 0; }
+.f-cell-wide { column-span: 2; }
+.-narrow #filters { grid-size: 2; grid-columns: 1fr 1fr; }
+.-narrow #rail { padding: 1 0 0 0; }
+.-narrow .rail-tab { padding: 0; }
+.sw-row { height: auto; margin: 0; }
+.sw-row .sw-label { padding: 0 1; width: 1fr; }
+.sw-row Switch.mini { margin: 0; }
+#set-src .sw-row:first-of-type { margin-top: 1; }
+#dir-buttons {
+    grid-size: 3;
+    grid-gutter: 1 2;
+    grid-rows: 1;
+    height: auto;
+    margin-top: 1;
+}
+#dir-buttons Button { width: 100%; margin: 0; }
+.-narrow #dir-buttons { grid-size: 2; }
+.api-card { margin-top: 1; height: auto; }
+#focus-bar Button { margin: 0 1 0 0; }
+#focus-bar { height: 1; }
+#focus-status { padding: 0 1; }
+Input.-textual-compact { border: none; height: 1; background: $panel; margin: 1 1 0 0; }
+Input.-textual-compact:focus { background: $panel; border: none; }
+
+/* short terminals (e.g. 80x24) */
+.-short #filters { grid-gutter: 0 2; }
+.-short #query-panel { padding-bottom: 0; }
+.-short #q-row Button { margin-top: 0; }
+.-short #result-count { margin-top: 0; }
+.-short .panel { margin-top: 0; }
+.-short #banner { margin-top: 0; }
+.-short #focus-bar { margin-top: 0; }
+.-short #article { margin-top: 0; }
+.-short #rail-head { margin-bottom: 0; }
+.-short #rail { padding-top: 0; }
+
+HelpScreen, ReadingsScreen { align: center middle; background: $background 70%; }
+#help-box, #readings-box {
+    width: 92%;
+    max-width: 120;
+    height: 90%;
+    border: double $primary;
+    background: $surface;
+    padding: 0 1;
+}
+#help-text, #readings-text { height: 1fr; }
+#help-close, #readings-close { height: 1; text-align: center; }
+AskContact { align: center middle; background: $background 70%; }
+#ask {
+    width: 72;
+    height: auto;
+    border: double $primary;
+    background: $surface;
+    padding: 1 2;
+}
+#ask-title { color: $primary; text-style: bold; margin-bottom: 1; }
+#ask-text { margin-bottom: 1; }
+#ask-input { margin-bottom: 1; }
+Button.-textual-compact.-primary { background: $primary 40%; }
+Button.-textual-compact.-error { background: $error 40%; }
+Button.-textual-compact.-primary:focus, Button.-textual-compact.-primary:hover { background: $primary; color: $background; }
+Button.-textual-compact.-error:focus, Button.-textual-compact.-error:hover { background: $error; color: $background; }
+
+/* ---------------------------------------------------------------- pages built on first use */
+.lazy-wait { width: 100%; padding: 2 4; color: $muted; text-style: italic; }
+.-narrow #gfx-mode { width: 1fr; }
+/* small terminals (80 x 24 and the like): an icon-only tab column */
+.-compact #rail { width: 7; padding: 0; }
+.-compact .rail-tab { padding: 0; content-align: center middle; }
+.-compact #rail-head, .-compact #rail-info, .-compact #rail-emblem { display: none; }
+.-short #rail-emblem, .-low #rail-emblem { display: none; }
+.-low #rail-info { display: none; }
+.-low #cal { margin-top: 0; }
+.-low #cal-panel .btn-row { display: none; }
