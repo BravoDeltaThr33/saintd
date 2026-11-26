@@ -7,7 +7,9 @@ like a page of the Synaxarion: the saint's **icon**, the **Life**, the **tropari
 from Wikipedia or OrthodoxWiki, feast days on the New and Old Calendars, and the saints who share them — and it can
 **read it all to you aloud**. Home is a full-screen **Church calendar dashboard**: the typikon sign of every day, the
 day's fast and readings with the Gospel's text, the saints, a saint of the day, and the feasts and fasts ahead.
-Everything is in English — Russian-calendar entries and non-English articles are translated.
+Everything is in English — Russian-calendar entries and non-English articles are translated. In terminals that show
+true images (Kitty, Ghostty and Sixel terminals) the icons stand in a gilded kiot and the double-headed eagle of the
+Church of Greece heads the tab column.
 
 ```
 F1 Home  F2 Search  F3 Focus  F4 Settings  P listen  ? Help  / search box  Esc tab column  ^B build  ^Q quit
@@ -27,129 +29,22 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ## What's new in 2.3.1
 
-- **The eagle of the Church of Greece, as it is.** The eagle at the head of the tab column is now the eagle of the flag
-  of the Church of Greece itself (black lines on the flag's yellow, the crown above the two heads, the sword and the
-  orb), with only the flag's ground taken away, in place of the eagle drawn for 2.3. The light behind it is as in
-  2.3: it hugs the eagle's outline and breaks out between the wings, the heads and the crown when you switch tabs.
+- **The eagle of the Church of Greece.** In Kitty and Ghostty (and Sixel terminals) the double-headed eagle at the
+  head of the tab column is now the eagle of the flag of the Church of Greece, as it is drawn there: black lines on
+  the flag's yellow, the closed crown above the two heads, the **sword** in its right claw and the **orb with the
+  cross** in its left. Only the flag's ground is taken away.
+- **Truer light behind it.** When you switch tabs the light behind the eagle swells and fades like a flare. It comes
+  from behind the eagle, as from a lamp hung behind a carving: brightest right at its outline and falling away with
+  the distance, with shafts of light breaking out between the wings, the heads and the crown. It swells fast, fades
+  fast and then slowly, in sixteen steps; on the light scheme (Theophany) it is a tint of the scheme's colour.
   ![The pulse](docs/pulse.png)
-- **The kiot, as photographed.** Icons now stand in a photograph of a gilded kiot (the round arch with its vine and
-  beads, the three-bar cross under it, the ruby at the top and the silver rosettes) in place of the frame drawn for
-  2.3. For an icon of another shape only the straight part of the sides is made longer or shorter, so the arch, the
-  cross and the corners are never distorted; the icon fills the opening, and the frame casts its shadow on it. A
-  saint without a picture gets the painted icon blank in the same frame.
-
-## What's new in 2.3
-
-- **The double-headed eagle, redrawn.** The eagle at the head of the tab column now follows the eagle of the Church
-  of Greece closely: the closed imperial crown floating between the heads, with its dark lobes, pearled arches and
-  cross; the heads turned outward, with hooked beaks, a stern eye under a heavy brow and a crest swept back; scaled
-  necks and breast; the wings raised from the shoulders, a band of small coverts along the leading edge and long
-  flight feathers, shadowed and notched, sweeping down to the lower corners; skirts of pointed thigh feathers over
-  ringed legs, the **sword** in its right claw and the **orb with the cross** in its left; the tail spread in a fan.
-  It is cast in relief now, every feather and scale raised and catching the light from the upper left, in a richer
-  gold.
-- **Truer light behind it.** The light comes from behind the eagle, as from a lamp hung behind a carving: brightest
-  right at its outline and falling away with the distance, with shafts of light breaking out between the wings, the
-  heads and the crown, and a gleam along the eagle's edges at the height of a pulse. A pulse swells quickly and fades
-  the way a flare does, fast at first and then slowly, in sixteen steps instead of ten. On the light scheme
-  (Theophany) the light is a tint of the scheme's colour.
-- **A new frame for the icons.** Icons now stand in a gilded **kiot** cast in relief: a round arch over straight
-  sides; all round, a rounded rim, rows of beads and a band of running vine with its leaves, flowers and tendrils;
-  under the arch, the **three-bar cross** on a plate with trefoil ends between scrolls of vine; the head of the
-  opening cut in two arches that meet in a point under the cross; a **cabochon ruby** in a beaded, pierced setting at
-  the top; and **silver rosettes** where the arch springs from the sides and at the lower corners. The frame is made
-  to the shape of each icon (over a wide icon the arch is lowered), the icon fills the opening, and the frame casts
-  its shadow on it. A saint without a picture gets the painted icon blank in the same frame.
-
-## What's new in 2.2.1
-
-- The glow behind the double-headed eagle now pulses **only when you switch tabs** — Home, Search, Focus or
-  Settings, whether by F1–F4, the tab column, a click on a tab, **/**, or opening a saint (which takes you to
-  Focus) — and no longer at every choice you make in a page.
-
-## What's new in 2.2
-
-- **The double-headed eagle.** In Kitty and Ghostty (and Sixel terminals) a gilded **Byzantine double-headed eagle**
-  in the tradition of the Greek Orthodox Church now heads the tab column, drawn after the eagle of the Church of
-  Greece and Mount Athos: two heads turned outward with hooked beaks, the imperial crown floating above them, wings
-  arched at the shoulders with long feathers sweeping down, scaled neck and breast, the **sword** in its right claw
-  and the **orb with the cross** in its left. It is painted for the size of your window — larger on tall terminals.
-- **The light behind it pulses** when you switch tabs: the glow behind the eagle swells into an aureole of rays and
-  fades back. Every step of the light is sent to the terminal once, so the pulse costs nothing while you work.
-- **The three-bar cross found its place** above the prayers: it heads the column of hymns in Focus and the
-  troparion and kontakion in the icon view (**V**), like the headpiece of a page in a service book.
-- **Every control checked again** against what the screen says about it (the Help, the key lines, the buttons,
-  the dialogs), with new tests for the reading bar's buttons, the voice dialog, the icon view, the Scripture window
-  and the Settings voice buttons. Fixed along the way:
-  - "Lived 7th century · 7th century": when a source gives a date only as a century it is no longer repeated
-    ("born in the 7th century"), and it is read aloud as a sentence ("Died in the 7th century").
-  - The Focus welcome now lists **V** (the icon view); under the day's readings Home says "S opens them" (not
-    "S reads them", which sounded like reading aloud); the voice dialog and messages name the Settings panel by
-    its real title.
-  - Choosing a Piper voice to download could be undone by the voice scan finishing a moment later.
-  - A message from a background download arriving while saintd was closing could end it with an error.
-  - Opening Settings for the first time no longer re-applies its values: it could switch the pictures mode, show a
-    needless "Sixel needs a restart" note, or round a timeout or reading speed set in the settings file.
-  - Clicking **Contents** twice left the cursor on the button, so the arrow and page keys stopped scrolling.
-  - The saint of the day's **Listen** button now says **Pause** and **Resume** while it reads, like Focus's.
-  - The Search help and key lines say that **F** and **P** work on the results (in the search box they are
-    letters); "(press S for the text)" is no longer shown when the calendar has no text for a reading; the
-    "Clear article cache" button, which also clears the download cache, is now called **Clear caches**.
-
-## What was new in 2.1
-
-- **Reading aloud.** Press **P** and the saint's life, hymns and history are read to you, the paragraph being read
-  highlighted and kept in view. On Home, **P** reads the whole day: its feasts and fast, the saints, the saint of the
-  day and the Epistle and Gospel. **P** pauses and resumes, **X** stops, **,** and **.** skip back and forward a
-  paragraph, **+** and **-** change the speed; a bar above the status line shows what is read, how far, the voice
-  and the speed, with buttons for the mouse. Six engines: **Piper** (natural neural voices, offline — offered the
-  first time you listen), RHVoice, SVOX Pico, eSpeak NG, Speech Dispatcher and Festival. Choose the engine, the
-  voice and the speed in **Settings → Voice & Reading aloud**, download Piper voices there, or hear a test.
-- **Every screen fills the window.** Home is a three-column dashboard on big terminals: the calendar and the days
-  ahead (the coming week and the next feasts and fasts, with Pascha worked out locally); the day's saints as a table
-  with century and place; and the saint of the day — icon, facts, life and troparion — above the Gospel and Epistle
-  in full. Focus keeps the facts in the header card and puts the hymns, feast days, the saints who share them and the
-  sources in a column beside the life. Search shows a **preview** of the highlighted saint beside the results.
-  Settings is laid out in two columns.
-- **Made for Kitty and Ghostty.** Icons stand in a **gilded, arched frame** with a velvet arch and a jewel, like an
-  icon case; a saint without a picture gets a **painted icon blank** — gold leaf, a halo with the initial and the
-  name inscribed. A gilded **Orthodox cross** headed the tab column (since 2.2, the double-headed eagle), the title
-  bar is a band of burnished gold, and **V** opens the **icon view**: the icon as large as the window allows, with
-  the troparion and kontakion beside it.
-- **Five new colour schemes**: Paschal Night, Mount Athos, Blue Domes, Theophany (a light scheme) and
-  **Liturgical Colours**, which follows the Church year like the vestments do — gold on ordinary days, blue for the
-  Theotokos, purple for the Cross and Lent, black in Holy Week, red for Pascha and the martyrs, green for Pentecost,
-  white for the Nativity, Theophany and the Transfiguration. Home shows the day's colour too.
-- **Fixed:** resizing or maximising the window after saintd started kept the small-terminal layout (an icon-only
-  tab column, the narrow Home); the layout now follows the window at once.
-
-## What was new in 2.0
-
-- **Icons of the saints**, drawn as real pictures in **Kitty** and **Ghostty** (Kitty graphics protocol), in
-  **WezTerm, foot, Konsole** and other **Sixel** terminals, and as colour mosaics everywhere else.
-- **Knows its terminal.** saintd recognises the terminal *and its version* — from the environment and by asking the
-  terminal itself (XTVERSION, the Kitty graphics query, cell size and device attributes) — and picks the best
-  pictures it can really show: Kitty images need kitty 0.28+ or Ghostty 1.0+, Konsole's Sixel needs 22.04+, and inside
-  tmux or screen it falls back to colour blocks. `saintd --terminal` shows what it found.
-- **The Church calendar on Home**: a month view with the typikon sign of each day (⊕ great feast, ✠ vigil,
-  ✚ polyeleos, ≈ doxology, ∽ six stichera, • fast day), the day's tone, fast, feasts and Scripture readings —
-  press **S** to read the Epistle and Gospel themselves.
-- **Hymns**: the troparion and kontakion of the saint, with their tone.
-- **New sources**: the Orthodox Calendar of Holy Trinity Russian Orthodox Church (English lives by Fr. S. Janos, and
-  the hymns), **OrthodoxWiki** (history when Wikipedia has none) and **Wikimedia Commons** / Azbuka Very icons.
-- **Focus** has a header card with the icon and the essentials, **[ ]** steps through the list you came from, and
-  saints under *Also Commemorated* open with a click.
-- **Saved saints ★** — press **F** on a saint on Home, in Search or in Focus; Search can show only your saved
-  saints.
-- **A cleaner directory**: a saint kept by several calendars on the same day under different titles ("Martyr",
-  "Virgin-martyr", "Venerable-martyr Anastasia the Roman") becomes one entry, and Russian-calendar names read as
-  English ("Matrona of Thessalonica", "Xenia (Eusebia) of Mylasa", "Olga (Helen)").
-- **Search in any alphabet**: *Серафим* or *Σεραφείμ* finds St Seraphim; the wheel and **[ ]** in Focus go
-  through all the results, not only the first 200.
-- **Help** (**?**) with every key and a glossary of Orthodox terms (hieromartyr, troparion, typikon…) — [screenshot](docs/help.png).
-- **Faster and smoother**: about twice as fast to start, pages built when first needed (or while you are idle), the
-  calendar moves instantly while the day's details follow, and every source is read in parallel.
-- Every letter key works in either case, and Ctrl keys with or without Shift.
+- **A gilded kiot for the icons.** Icons now stand in a photographed gilded **kiot**, the case an icon stands in: a
+  round arch with its running vine and rows of beads, the **three-bar cross** under the arch, the head of the opening
+  cut in two arches that meet in a point under the cross, a **ruby** at the top and **silver rosettes** where the arch
+  springs from the sides and at the lower corners. The frame is made to the shape of each icon (only the straight
+  part of its sides grows or shrinks, so the arch, the cross and the corners are never distorted), the icon fills
+  the opening, and the frame casts its shadow on it. A saint without a picture gets the painted icon blank in the
+  same frame.
 
 ---
 
@@ -187,6 +82,9 @@ To uninstall: `pipx uninstall saint-directory` (and optionally
 
 ## Pictures in your terminal
 
+saintd recognises the terminal *and its version* (from the environment and by asking the terminal itself: XTVERSION,
+the Kitty graphics query, the cell size and the device attributes) and picks the best pictures it can really show:
+
 | Terminal | Pictures | Notes |
 |---|---|---|
 | **Kitty** 0.28+ | True images (Kitty graphics) | Best quality |
@@ -196,10 +94,16 @@ To uninstall: `pipx uninstall saint-directory` (and optionally
 | Inside tmux / screen | Colour-block mosaic | Multiplexers don't pass images on reliably |
 | Linux console | Off | An ornamental frame with the saint's initial |
 
-With true images (Kitty, Ghostty, Sixel) the icons stand in a gilded kiot (an arched frame cast in relief), saints
-without a picture get a painted icon blank, the gilded double-headed eagle heads the tab column — in Kitty and Ghostty
-the light behind it pulses when you switch tabs — the three-bar cross stands above the hymns, and **V** in Focus shows
-the icon as large as the window allows.
+With true images (Kitty, Ghostty, Sixel) the icons stand in a **gilded kiot** made to the shape of each icon, and a
+saint without a picture gets a **painted icon blank**: gold leaf, a halo with the initial, and the name inscribed.
+The three-bar cross heads the hymns in Focus and the troparion and kontakion in the icon view, like the headpiece of
+a page in a service book. **V** in Focus (or a click on the icon) shows the icon as large as the window allows, with
+the troparion and kontakion beside it.
+
+The **double-headed eagle** of the Church of Greece heads the tab column, painted for the size of your window (larger
+on tall terminals). In Kitty and Ghostty the light behind it pulses when you switch tabs (by **F1–F4**, the tab
+column, a click on a tab, **/**, or opening a saint, which takes you to Focus) and at nothing else; every step of the
+light is sent to the terminal once, so the pulse costs nothing while you work.
 
 You can choose yourself in **Settings → Display & Pictures** (Automatic, Kitty, Sixel, Colour blocks or Off), or for
 one run with `SAINTD_GRAPHICS=blocks saintd`. Icons are downloaded only when you open a saint (or it is Saint of the
@@ -216,7 +120,8 @@ saintd --terminal      # what saintd knows about this terminal
 Press **P**: in **Focus** the saint is read (name and facts, the life, the troparion and kontakion, then the
 calendar notes and the history); on **Home** the day is read (its date and feasts, the fast, the saints, the saint
 of the day, and the Epistle and Gospel); in **Search** the highlighted saint. The reading goes on while you move to
-other tabs.
+other tabs. The paragraph being read is highlighted and kept in view, and a bar above the status line shows what is
+being read, how far it has got, the voice and the speed, with buttons for the mouse.
 
 | Key | |
 |---|---|
@@ -262,20 +167,21 @@ own keys (T, N, [ ], …) also work while the cursor is on the tab column.
 
 | Tab | What it shows |
 |---|---|
-| **Home** | The Church calendar (with the Old Calendar date), the day's feasts, tone, fast, season and Scripture readings; the week ahead and the next feasts and fasts; the saints commemorated that day (century, place, ✦ life, ♪ hymns); a Saint of the Day with an icon, facts, the Life and the troparion; and the Gospel and Epistle in full. |
-| **Search** | Type a name or part of one (spelling variants match: *athanasios* finds *Athanasius*, *cyril* finds *Kirill*). Filter by feast month/day, gender, century, country and kind of saint (Martyr, Hieromartyr, Monastic, Hierarch, Royal, Fool-for-Christ, Unmercenary…), or show only your saved saints. ✦ marks saints with a Life or article, ★ your saved ones. On wide terminals a preview of the highlighted saint stands beside the results. |
-| **Focus** | One saint: a header card with the icon and every fact (feast days, Old Calendar date, dates, place, kind, sources); then the Life (from the Synaxarion, the Holy Trinity calendar, the Mystagogy Resource Center or Azbuka Very), the Hymns, the History (Wikipedia or OrthodoxWiki, translated if needed), the commemorations, the saints who share the day, and every source with its licence — on wide terminals the hymns, feast days and sources stand in a column beside the life. |
+| **Home** | The Church calendar: a month with the typikon sign of every day (⊕ great feast, ✠ vigil, ✚ polyeleos, ≈ doxology, ∽ six stichera, • fast day) and the Old Calendar date; the day's feasts, tone, fast, season, vestment colour and Scripture readings; the week ahead and the next feasts and fasts (Pascha is worked out on your computer); the saints commemorated that day (century, place, ✦ life, ♪ hymns); a Saint of the Day with an icon, facts, the Life and the troparion; and the Gospel and Epistle in full. On big terminals it is a three-column dashboard. |
+| **Search** | Type a name or part of one, in any alphabet (*Серафим* or *Σεραφείμ* finds St Seraphim; spelling variants match: *athanasios* finds *Athanasius*, *cyril* finds *Kirill*). Filter by feast month/day, gender, century, country and kind of saint (Martyr, Hieromartyr, Monastic, Hierarch, Royal, Fool-for-Christ, Unmercenary…), or show only your saved saints. ✦ marks saints with a Life or article, ★ your saved ones. On wide terminals a preview of the highlighted saint stands beside the results; in Focus, **[ ]** steps through all of them. |
+| **Focus** | One saint: a header card with the icon and every fact (feast days, Old Calendar date, dates, place, kind, sources); then the Life (from the Synaxarion, the Holy Trinity calendar, the Mystagogy Resource Center or Azbuka Very), the Hymns, the History (Wikipedia or OrthodoxWiki, translated if needed), the commemorations, the saints who share the day (click one to open it), and every source with its licence — on wide terminals the hymns, feast days and sources stand in a column beside the life. |
 | **Settings** | Colour scheme and symbols, pictures, voice & reading aloud, New/Old Calendar, which sources to use, translator, network contact and timeout, directory maintenance (build, link, pause, retry, clear caches, delete) and information about every source. |
 
 ## Keys
 
-Letter keys work in either case. The mouse works too: click tabs, buttons, days and saints, scroll with the wheel.
+Letter keys work in either case, and Ctrl keys with or without Shift. The mouse works too: click tabs, buttons, days
+and saints, scroll with the wheel.
 
 | Everywhere | |
 |---|---|
 | **F1 F2 F3 F4** | Home, Search, Focus, Settings |
 | **/** | Jump to the search box |
-| **?** | Help (press **?**, **Esc** or **Q** to close) |
+| **?** | Help: every key, and a glossary of Orthodox terms (hieromartyr, troparion, typikon…); **?**, **Esc** or **Q** closes it — [screenshot](docs/help.png) |
 | **Esc** | Put the cursor on the tab column |
 | **Ctrl+B** | Build or update the directory |
 | **Ctrl+Q** | Quit |
@@ -335,7 +241,7 @@ above work.
 | **Mount Athos** | monastic black, beeswax, olive groves and the Aegean |
 | **Blue Domes** | the starry blue domes and gold stars of the Lavra, with brick |
 | **Theophany** (light) | white garments, Jordan blue and gold, on ivory |
-| **Liturgical Colours** | changes with the Church year like the vestments (after Russian use; customs differ): gold, blue, purple, green, white, red or black |
+| **Liturgical Colours** | changes with the Church year like the vestments (after Russian use; customs differ): gold, blue, purple, green, white, red or black; Home shows the day's colour |
 
 Themes use 24-bit colour, which most terminals support. If your font lacks symbols such as ☦ or ⚙, choose
 **Plain ASCII** symbols in Settings. The layout adapts from 80×24 up; on small terminals the tab column shows icons
@@ -345,7 +251,9 @@ only.
 
 ## Where the information comes from
 
-No API keys and no subscriptions are needed.
+No API keys and no subscriptions are needed. A saint kept by several calendars on the same day under different titles
+("Martyr", "Virgin-martyr", "Venerable-martyr Anastasia the Roman") becomes one entry, and Russian-calendar names
+read as English ("Matrona of Thessalonica", "Xenia (Eusebia) of Mylasa", "Olga (Helen)").
 
 | Source | Language | Used for | Terms |
 |---|---|---|---|
@@ -456,8 +364,9 @@ saintd
 The code is in `saintd/`: `sources.py` (API clients), `sync.py` (building and Wikidata linking), `wikical.py`
 (Wikipedia's Orthodox calendar pages), `lives.py` (Mystagogy and Azbuka Very lives), `htc.py` (the Holy Trinity
 calendar), `owiki.py` (OrthodoxWiki), `icons.py` (finding and caching icons), `term.py` (terminal detection),
-`graphics.py` (Kitty, Sixel and colour-block pictures, the eagle's pulse), `art.py` (the gilded frames, icon
-blanks and the cross headpiece), `eagle.py` (the double-headed eagle and its steps of light),
+`graphics.py` (Kitty, Sixel and colour-block pictures, the eagle's pulse), `art.py` (the kiot, icon blanks and
+the cross headpiece), `eagle.py` (the double-headed eagle and its steps of light), `assets/` (the pictures of the
+eagle and the kiot),
 `themes.py` (colour schemes and liturgical colours), `paschalion.py` (Pascha, feasts and fasts), `tts.py` (reading
 aloud: engines, voices, players and the reader), `piper_worker.py` (Piper in its own process), `narration.py` (what is
 read), `ru.py` (Russian → English), `heuristics.py` (titles → facts), `article.py` (the Focus article),
