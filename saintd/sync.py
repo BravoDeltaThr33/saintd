@@ -14,14 +14,15 @@ from . import heuristics as H
 from . import ru
 from .lives import roles
 from . import sources as S
+from . import wdsaints as WD
 from . import wikical as W
 from .db import DB, cats_to_str, dumps, loads, str_to_cats
 from .net import Cancelled, Http, NetError
 from .text import STOPWORDS as _STOP
-from .text import _letters, fold, has_cyrillic, html_to_text, sig_tokens
+from .text import _letters, fold, has_cyrillic, html_to_text, sig_tokens, translit
 from .translate import TranslationError, Translator
 
-BUILD_VERSION = "2"
+BUILD_VERSION = "3"                     # 3: saints from Wikidata
 PARTIAL_BUILD = "partial"              # some downloads failed: finish the build at the next start
 
 
@@ -48,6 +49,135 @@ def occasion_of(title: str) -> str:
 
 def _tokset(text: str) -> set[str]:
     return set(sig_tokens(text))
+
+
+def _same_word(a: str, b: str) -> bool:
+    """A surname or place spelled alike (Klepinin/Klepenin), not one that only begins the same
+    way (Kalyazinsky/Kalita)."""
+    return a == b or (len(a) >= 4 and a[:4] == b[:4] and SequenceMatcher(None, a, b).ratio() >= 0.75)
+
+
+def _close_names(a: str, b: str) -> bool:
+    """The same name allowing for spelling (Enravota/Enravot, Timotheus/Timothy), but not just
+    alike (Epiphanius/Epitacius, Basil/Basilla)."""
+    return a == b or (len(a) >= 5 and len(b) >= 5 and a[:5] == b[:5] and _names_similar(a, b)
+                      and abs(len(a) - len(b)) <= 2)
+
+
+def _core_key(name: str | None) -> str:
+    """A saint's name without titles, folded, for "the same saint on another day": only names of
+    two words or more ("Pachomius the Great"), as a single name is shared by many."""
+    if not name or has_cyrillic(name):
+        return ""
+    key = " ".join(re.sub(r"[^\w\s]", " ", fold(H.match_core(name))).split())
+    return key if len(key.split()) >= 2 else ""
+
+
+# words a name may begin with that are not a first name ('Patriarch Methodios I of Constantinople')
+_RANKS = {"patriarch", "pope", "king", "queen", "prince", "princess", "tsar", "tsaritsa", "tsarevich", "emperor",
+          "empress", "grand", "duke", "duchess", "bishop", "archbishop", "metropolitan", "abbot", "abbess", "elder",
+          "father", "mother", "holy", "despot", "voivode", "hieromonk", "archimandrite", "priest", "deacon",
+          "protopresbyter", "archpriest", "monk", "nun", "schemamonk", "schemanun", "hegumen", "starets"}
+
+
+# words in a commemoration that name no one ('Equal-to-the-Apostles', 'Presbyters', 'founder')
+_NOT_NAMES = {
+    "martyr", "martyrs", "hieromartyr", "hieromartyrs", "venerable", "venerables", "venerablemartyr",
+    "venerablemartyrs", "greatmartyr", "neomartyr", "neomartyrs", "saint", "saints", "st", "sts", "holy", "new",
+    "righteous", "right", "believing", "blessed", "confessor", "confessors", "passion", "bearer", "bearers",
+    "passionbearers", "royal", "crown", "princes", "duchesses", "virgin", "apostle", "apostles", "equal", "equals",
+    "prophet", "prophetess", "presbyter", "presbyters", "hieromonks", "hieroschemamonk", "schema", "monks", "nuns",
+    "deaconess", "founder", "founders", "wonderworker", "wonderworkers", "companions", "synaxis", "relics",
+    "uncovering", "translation", "repose", "commemoration", "memory", "martyrdom", "to", "the", "of", "in", "and",
+    "with", "him", "his", "her", "their", "them", "all", "other", "others",
+}
+
+
+def _members(name: str) -> list[str]:
+    """The words of a name that may name someone, normalised, in order: the names in a group,
+    surnames in parentheses, places; not titles and ranks."""
+    return [_norm_tok(t) for t in re.findall(r"[A-Za-z][A-Za-z']+", H.expand(name))
+            if fold(t) not in _NOT_NAMES and fold(t) not in _RANKS]
+
+
+_SEGMENTS = re.compile(r"[,;&]|\band\b|\bwith\b", re.I)
+_PLACE_WORD = re.compile(r"(?:sky|skiy|skii|ski|skaya|skaia|ensis)$", re.I)
+
+
+def _same_first(a: str, b: str) -> bool:
+    """The same first name, spelled either way (Sergii/Sergius, Theodoros/Theodorus), but not a
+    like one (Theodosius/Theodotus, Peter/Petersburg, Basil/Basilla)."""
+    def stem(t: str) -> str:
+        t2 = re.sub(r"(?:ius|ios|ii|iy|ij|us|os|as|es|is|y)$", "", t.replace("f", "t"))
+        return t2 if len(t2) >= 3 else t
+    return stem(a) == stem(b) or (len(a) >= 6 and a[:4] == b[:4] and a.endswith("a") == b.endswith("a")
+                                  and SequenceMatcher(None, a, b).ratio() >= 0.85)       # Golinduch/Golinduc
+
+
+def _group_names(name: str) -> tuple[list[tuple[str, list[str]]], list[str]]:
+    """The people a commemoration names, each as (first name, their surname or other words), and
+    the words said of them all: what comes before a colon, and phrases with 'of' or 'in'.
+    'Venerables Nicephorus and Gennadius, Vazheozersky' -> ([('nicephorus', []), ('gennadius', [])],
+    ['bajeozer'])."""
+    head, _, rest = H.expand(name).rpartition(":")
+    people: list[tuple[str, list[str]]] = []
+    shared = [_norm_tok(t) for t in re.findall(r"[A-Za-z][A-Za-z']+", head)
+              if fold(t) not in _NOT_NAMES and fold(t) not in _RANKS]
+    rest = re.sub(r"\(([^()]*)\)", lambda m: " " if m.group(1).strip() in WD.ENGLISH_NAMES else f" {m.group(1)} ",
+                  rest)
+    for seg in _SEGMENTS.split(rest):        # '(Theodora)' is another name; '(Bukharin)' a surname
+        toks = [t for t in re.findall(r"[A-Za-z][A-Za-z']+", seg)
+                if fold(t) not in _NOT_NAMES and fold(t) not in _RANKS and not re.fullmatch(r"[IVX]+", t)]
+        if not toks:
+            continue
+        if re.match(r"\s*(?:of|in|at|from)\b", seg, re.I) or _PLACE_WORD.search(toks[0]):
+            shared += [_norm_tok(t) for t in toks]
+        else:
+            people.append((_norm_tok(toks[0]), [_norm_tok(t) for t in toks[1:]]))
+    return people, shared
+
+
+def _name_then(members: list[str], first: str, others: list[str], within: int = 5) -> bool:
+    """Does a name have this first name with this surname or place a few words on, or anywhere
+    before it, as a group's place is ('Paul Komelsky (Obnorsky)' has Paul of Obnora, 'Royal
+    Martyrs of Russia: ... Anastasia' has Anastasia of Russia; a surname further on, another
+    member's, does not count)."""
+    for i, t in enumerate(members):
+        if _names_similar(first, t) and any(_same_word(o, u) for o in others
+                                            for u in members[:i] + members[i + 1:i + 1 + within]):
+            return True
+    return False
+
+
+_PATRONYMIC = re.compile(r"(?:ovic|evic|ovich|evich|ovna|evna|ichna)$")
+
+
+def _plain_name(name: str) -> str:
+    """A name without the ranks it begins with ('Patriarch Methodios I'), 'the Neomartyr', or a
+    patronymic, the first name first ('Michael Aleksandrovich Berezin', 'Kharitonov Ivan
+    Mikhaylovich' -> 'Ivan Kharitonov')."""
+    words = re.sub(r"\s+the\s+(?:Neo-?martyr|New[- ]Martyr)\b", "", name, flags=re.I).split()
+    while len(words) > 1 and fold(words[0]).strip(",.") in _RANKS:
+        words.pop(0)
+    plain = [w for w in words if not w.startswith("(")]
+    if len(plain) == 3 and _PATRONYMIC.search(fold(plain[2])):
+        return f"{plain[1]} {plain[0].rstrip(',')}"
+    if len(words) == 3 and _PATRONYMIC.search(fold(words[1])):
+        del words[1]
+    return " ".join(words)
+
+
+_GREAT_MARTYR = re.compile(r"great[- ]?martyr", re.I)
+UNCOMMON = 12       # saints sharing a first name, at most, for a first name on the same day to tell
+
+
+def _name_words(*texts: str | None) -> set[str]:
+    """The significant words of English names (titles and small words left out), spelled alike."""
+    out: set[str] = set()
+    for t in texts:
+        if t and not has_cyrillic(t):
+            out.update(w for w in sig_tokens(t) if len(w) > 2)
+    return out
 
 
 _ADJ_SUFFIX = re.compile(r"(?:skaia|skaya|skii|skiy|sky|ski|skoi|skoe|ianin|anin|enin|ian|ensis|ite)$")
@@ -272,6 +402,8 @@ class Syncer:
                 self._stage_azbyka(rep)
             if self.cfg["use_wikical"]:
                 self._stage_wikical(rep)
+            if self.cfg["use_wikidata_saints"] and self.cfg["use_wikimedia"]:
+                self._stage_wikidata(rep)
             self._stage_merge_same_day(rep)
             with self.db.lock:
                 people = self.db.con.execute("SELECT COUNT(*) FROM saints").fetchone()[0]
@@ -696,6 +828,253 @@ class Syncer:
                 upd["gender"], upd["gender_src"] = g, "calendar note"
         if upd:
             self.db.update_saint(sid, upd, commit=False)
+
+    # ------------------------------------------------------------ wikidata
+    def _stage_wikidata(self, rep: Report) -> None:
+        """The Eastern Orthodox saints Wikidata gives a feast day, that no calendar here has."""
+        rep.stage("Saints from Wikidata")
+        try:
+            items = WD.fetch(self.http, lambda d, t: rep.progress(d, t, "queries"))
+        except NetError as e:
+            rep.log(f"Wikidata saints: {e}")
+            self._failures += 1
+            return
+        found = []
+        for it in items.values():
+            if WD.orthodox(it):
+                days, named = WD.church_days(it), WD.english_name(it)
+                if days and named:
+                    found.append((it, days, *named))
+        keys, _ = self._indexes()
+        idx = self._day_index()
+        known = self._known_saints()
+        added = present = 0
+        for n, (it, days, name, kind) in enumerate(found):
+            rep.progress(n, len(found), "")
+            key = f"wd:{it['qid']}"
+            sid = keys.get(key)                      # added on an earlier build
+            if sid is None:
+                if self._has_saint(it, name, kind, days, idx, known):
+                    present += 1
+                    continue
+                sid = self._insert_wikidata(it, name, kind, key)
+                keys[key] = sid
+                added += 1
+                # known from now on: Wikidata has some saints twice
+                known["qids"].add(it["qid"])
+                if it["enwiki"]:
+                    known["links"].add(_norm_title(it["enwiki"]))
+                for t in _name_words(name):
+                    known["by_tok"].setdefault(t, set()).add(sid)
+                members = _members(name)
+                for t in members:
+                    known["by_stem"].setdefault(t[:5], set()).add(sid)
+                known["info"][sid] = (H.core_name(name), WD.century(it), members)
+                if _core_key(name):
+                    known["cores"].add(_core_key(name))
+            else:
+                present += 1
+            for m, d in days:
+                self.db.add_feast(sid, m, d, "", "wikidata", commit=False)
+                idx.setdefault((m, d), []).append({"id": sid, "key": key, "name": name, "core": H.core_name(name),
+                                                   "kind": kind, "az_slug": ""})
+            if n % 50 == 0:
+                self.db.commit()
+        self.db.commit()
+        rep.progress(len(found), len(found), "")
+        rep.log(f"Wikidata: {len(found):,} Eastern Orthodox saints with a feast day — {present:,} known, "
+                f"{added:,} new saints added")
+
+    def _known_saints(self) -> dict:
+        """What the directory already has, to tell a Wikidata saint from one it knows: Wikidata ids,
+        English Wikipedia articles, and the saints by the words of their English names."""
+        qids: set[str] = set()
+        links: set[str] = set()
+        by_tok: dict[str, set[int]] = {}
+        info: dict[int, tuple[str, int | None, list[str]]] = {}
+        cores: set[str] = set()
+        by_stem: dict[str, set[int]] = {}
+        great: dict[str, set[int]] = {}
+        with self.db.lock:
+            rows = self.db.con.execute("SELECT id, name, core, aliases, wikilabel, ru_en, qid, qid_hint, sitelinks, "
+                                       "century FROM saints WHERE kind IN ('saint','group')").fetchall()
+        for r in rows:
+            qids.update(q for q in (r["qid"], r["qid_hint"]) if q)
+            en = (loads(r["sitelinks"] or "{}", {}) or {}).get("enwiki")
+            if en:
+                links.add(_norm_title(en))
+            for t in _name_words(r["name"], r["core"], r["aliases"], r["wikilabel"], r["ru_en"]):
+                by_tok.setdefault(t, set()).add(r["id"])
+            members = _members(f"{r['name']} {r['wikilabel'] or ''}")
+            for t in members:
+                by_stem.setdefault(t[:5], set()).add(r["id"])
+            info[r["id"]] = (r["core"] or r["name"], r["century"], members)
+            cores.update(k for k in (_core_key(r["name"]), _core_key(r["wikilabel"])) if k)
+            if _GREAT_MARTYR.search(r["name"]):
+                first = _name_parts(r["core"] or r["name"])[0]
+                if first:
+                    great.setdefault(first[:5], set()).add(r["id"])
+        return {"qids": qids, "links": links, "by_tok": by_tok, "info": info, "cores": cores, "by_stem": by_stem,
+                "great": great}
+
+    @staticmethod
+    def _wikidata_names(it: dict, name: str) -> list[str]:
+        """The names a Wikidata saint may go by in English: the one we give it, its English label
+        and Wikipedia title, its Russian name, its English and Russian aliases, and its Russian,
+        Ukrainian and Bulgarian names spelled out in Latin letters, without titles or patronymics."""
+        female = it["gender"] == "Q6581072"
+        names = [name]
+        en = it["labels"].get("en")
+        if en and not has_cyrillic(en):
+            names.append(WD.english_first(en))
+        if it["enwiki"]:
+            names.append(WD.english_first(WD.wiki_title(it["enwiki"])))
+        if it["labels"].get("ru"):
+            ru_en = WD.russian_name(it["labels"]["ru"], female=female)
+            names.append(ru_en if female else WD.english_first(ru_en))
+        names += [WD.english_first(a) for lang, a in it["aliases"] if lang == "en" and not has_cyrillic(a)][:6]
+        names += [WD.english_first(WD.russian_name(a, female=female))
+                  for lang, a in it["aliases"] if lang == "ru"][:4]
+        for lang in ("ru", "uk", "bg"):            # as a calendar's English spells it ('Ilya Muromets')
+            plain = WD.spelled(it["labels"].get(lang, ""))
+            if plain and not has_cyrillic(plain):
+                names.append(WD.english_first(plain))
+        return list(dict.fromkeys(_plain_name(WD.plain_name(n)) for n in names if n and WD.plain_name(n)))
+
+    def _has_saint(self, it: dict, name: str, kind: str, days: list, idx: dict, known: dict) -> str:
+        """Is this Wikidata saint one the directory already has? Returns how it was known (empty:
+        it is new). When in doubt, known: a saint left out is better than the same saint twice."""
+        if it["qid"] in known["qids"]:
+            return "same Wikidata item"
+        if it["enwiki"] and _norm_title(it["enwiki"]) in known["links"]:
+            return "same Wikipedia article"
+        names = self._wikidata_names(it, name)
+        # the same name as a saint kept on another day ("Pachomius the Great": May 9 in the West)
+        same = {_core_key(n) for n in names} & known["cores"]
+        if same:
+            return f"same name on another day: {min(same)}"
+        all_parts = [_name_parts(n) for n in names]
+        parts = [(f, os_) for f, os_ in all_parts if f and f not in _RANKS]
+        places = [_norm_tok(w) for w in re.findall(r"\b[A-Z][a-z]{3,}\b", it["descs"].get("en", ""))]
+        firsts = {f for f, _ in parts}
+        by_stem, info = known["by_stem"], known["info"]
+        # first names few saints have, however they are spelled (Theodoros is Theodore, Gavriil
+        # is Gabriel: common): the rarest tell on any day near, the uncommon on the day itself
+        rare_first = {f for f in firsts if 0 < len(by_stem.get(f[:5], ())) <= 3}
+        uncommon = {f for f in firsts if 0 < len(by_stem.get(f[:5], ())) <= UNCOMMON}
+        few = {f for f in firsts if 0 < len(by_stem.get(f[:5], ())) <= 40}
+        bare = not _name_parts(_plain_name(WD.plain_name(name)))[1]      # known by a first name alone
+        kinds = ("saint", "group") if kind == "saint" else ("group",)
+        # on the feast day (or a day either side), or 13 days away, when Wikidata or the directory
+        # gives the civil date
+        exact = {WD.shift_day(m_d, k) for m_d in it["feasts"] | set(days)
+                 for k in (0, -S.JULIAN_OFFSET, S.JULIAN_OFFSET)}
+        cent = WD.century(it)
+        cats = set(H.categories_for(name, kind))
+        near = {WD.shift_day(m_d, k) for m_d in exact for k in (-1, 0, 1)}
+        for day in sorted(near):
+            cands = [c for c in idx.get(day, []) if c["kind"] in kinds]
+            if not cands:
+                continue
+            for nm in (names if bare else [n for n, (_, os_) in zip(names, all_parts) if os_]):
+                sid = self._match_on_day(nm, cands)
+                if sid is not None:
+                    return f"same day: {next(c['name'] for c in cands if c['id'] == sid)}"
+            # the matcher reads a name without what is in parentheses, only a group's first
+            # name, and will not choose between namesakes
+            for c in cands:
+                members = _members(c["name"])
+                if rare_first and any(_close_names(f, t) for f in rare_first for t in members):
+                    return f"same day, the same rare name: {c['name']}"
+                if any(os_ and _name_then(members, f, os_) for f, os_ in parts):
+                    return f"same day, the same name and surname or place: {c['name']}"
+                if day not in exact:
+                    continue
+                if bare and any(_close_names(f, t) for f in firsts for t in members):
+                    return f"same day, {'in a group' if c['kind'] == 'group' else 'a namesake'}: {c['name']}"
+                if uncommon and any(_same_first(f, t) for f in uncommon for t in members):
+                    return f"same day, an uncommon name: {c['name']}"
+                if _cat_conflict(cats, set(H.categories_for(c["name"], c["kind"]))) or \
+                        (cent and info.get(c["id"], ("", None))[1] and abs(info[c["id"]][1] - cent) > 1):
+                    continue
+                # one of those a commemoration names with nothing more said of them, or with
+                # nothing against ours ('Martyrs Eustathius, Thespesius and Anatolius' has
+                # Anatolius of Nicaea, 'St Bassian, founder' has Vassian of Uglich; 'Venerables
+                # Nicephorus and Gennadius, Vazheozersky' has not Nicephorus of Borovsk)
+                people, shared = _group_names(c["name"])
+                alone = len(people) == 1 and not people[0][1] and not shared
+                if c["kind"] == "group" or (alone and any(f in few for f in firsts)):
+                    for f, os_ in parts:
+                        if not (bare or os_):
+                            continue                # 'Paul IV' when it is 'Paul IV of Constantinople'
+                        for g, theirs in people:
+                            against = theirs + shared
+                            if _same_first(f, g) and (not os_ or not against or
+                                                      any(_same_word(o, t) for o in os_ for t in against)):
+                                how = "in a group" if c["kind"] == "group" else "alone"
+                                return f"same day, named {how}: {c['name']}"
+                if c["kind"] != "group" and places and any(_name_then(members, f, places) for f in firsts):
+                    return f"same day, the same name and the place its description gives: {c['name']}"
+
+        number = re.search(r"\b([IVX]+)\b", name)
+
+        def fits(sid: int) -> bool:
+            """No dates against it, no other number (Flavian I is not Flavian II), and the same
+            first name."""
+            other, c2, members = info[sid]
+            if cent is not None and c2 is not None and not (-1 <= c2 - cent <= (1 if it["died"] is not None else 2)):
+                return False                         # (with only a birth year, death may be two centuries on)
+            theirs = re.search(r"\b([IVX]+)\b", other)
+            if number and theirs and number.group(1) != theirs.group(1):
+                return False
+            return any(_names_similar(f, t) for f in firsts for t in members)
+
+        # a great-martyr: there are few, and the West keeps some of them on other days and by
+        # other names (Margaret is Marina), which its labels in other languages give
+        if WD.GREAT_MARTYR in it["titles"]:
+            labels = [it["labels"].get(lang, "") for lang in ("ru", "bg", "uk", "sr", "ro")]
+            greats = set(firsts) | {_name_parts(WD.english_first(translit(lb) if has_cyrillic(lb) else lb))[0]
+                                    for lb in labels if lb}
+            for first in greats:
+                for sid in known["great"].get(first[:5] if first else "", ()):
+                    return f"a great-martyr kept on another day: {info[sid][0]}"
+        # kept on another day: the same first name and a surname or place few saints have, spelled
+        # alike (Klepinin, Klepinine), or a one-word name few saints have
+        for o in {o for _, os_ in parts for o in os_ if len(o) >= 4}:
+            having = [sid for sid in by_stem.get(o[:5], ()) if any(_same_word(o, t) for t in info[sid][2])]
+            both = [sid for sid in having if fits(sid)]
+            if both and len(having) <= 8:
+                return f"same names: {info[both[0]][0]}"
+        words = _name_words(*names)
+        if len(words) == 1:
+            sids = known["by_tok"].get(next(iter(words)), set())
+            if len(sids) <= 3:
+                sid = next((sid for sid in sids if fits(sid)), None)
+                if sid is not None:
+                    return f"same rare name: {info[sid][0]}"
+        return ""
+
+    def _insert_wikidata(self, it: dict, name: str, kind: str, key: str) -> int:
+        cent = WD.century(it)
+        cnt = H.country_from_name(name)
+        gender = WD.GENDERS.get(it["gender"], "") if kind == "saint" else ""
+        ru_label = it["labels"].get("ru", "")
+        m = re.match(r"^([^,()]+),\s*(\S+)", ru_label)
+        fields = {
+            "key": key, "name": name, "core": H.core_name(name), "kind": kind,
+            "gender": gender or H.gender_guess(name, kind), "gender_src": "wikidata" if gender else "name",
+            "century": cent, "century_src": "wikidata" if cent is not None else "",
+            "year_hint": it["died"] if kind == "saint" else None,
+            "country": cnt[0] if cnt else "Unknown", "country_src": "name" if cnt else "",
+            "place": cnt[1] if cnt else "",
+            "categories": cats_to_str(H.categories_for(name, kind)),
+            "description": it["descs"].get("en", ""),
+            "ru_nominative": f"{m.group(2)} {m.group(1).strip()}" if m else ru_label,
+            "sources": "|wikidata|",
+            "sitelinks": dumps({"enwiki": it["enwiki"]}) if it["enwiki"] else "{}",
+            "qid_hint": it["qid"],                   # the background linking takes it from here
+        }
+        return self.db.insert_saint(fields)
 
     @staticmethod
     def _wc_links(e) -> str:

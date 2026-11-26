@@ -48,6 +48,7 @@ DEFAULTS: dict[str, Any] = {
     "use_azbyka": True,             # Russian calendar (Azbuka Very), translated
     "use_wikical": True,            # Wikipedia's 366 Orthodox calendar day pages
     "use_wikimedia": True,          # Wikidata facts + Wikipedia articles
+    "use_wikidata_saints": True,    # Orthodox saints with a feast day that only Wikidata lists
     "auto_enrich": True,            # keep enriching the directory in the background
     "translate_articles": True,     # translate non-English Wikipedia articles when needed
     "use_mystagogy": True,          # English lives from the Mystagogy Resource Center

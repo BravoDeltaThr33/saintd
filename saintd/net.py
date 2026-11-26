@@ -31,6 +31,7 @@ DEFAULT_INTERVALS = {
     "orthodoxwiki.org": 1.0,
     "upload.wikimedia.org": 0.5,
     "www.wikidata.org": 1.0,
+    "query.wikidata.org": 2.0,              # a few large queries per build
     "api.mymemory.translated.net": 1.0,
 }
 

@@ -31,6 +31,7 @@ SOURCE_SWITCHES = (
     ("use_azbyka", "Include the Russian calendar (Azbuka Very), translated to English"),
     ("use_wikical", "Include Wikipedia's Orthodox calendar (366 Great Synaxaristes day pages)"),
     ("use_wikimedia", "Use Wikidata facts and Wikipedia articles"),
+    ("use_wikidata_saints", "Add the Orthodox saints with a feast day that only Wikidata lists"),
     ("auto_enrich", "Keep linking saints to Wikidata in the background"),
     ("translate_articles", "Translate non-English Wikipedia articles when no English one exists"),
     ("use_htc", "Read lives, troparia and kontakia from the Holy Trinity Orthodox Calendar"),
@@ -245,7 +246,8 @@ class SettingsPane(LazyPage, VerticalScroll):
             "No API keys or paid subscriptions are needed. Lives come from orthocal.info and, for saints it has no "
             "Life for, from the Holy Trinity Orthodox Calendar, the Mystagogy Resource Center (English) or the "
             "saint's Azbuka Very page (translated); hymns from the Holy Trinity calendar; most of the directory "
-            "comes from Wikipedia's 366 Orthodox calendar day pages; facts from Wikidata (CC0); articles from "
+            "comes from Wikipedia's 366 Orthodox calendar day pages, and Orthodox saints no calendar lists from "
+            "Wikidata; facts from Wikidata (CC0); articles from "
             "Wikipedia (CC BY-SA 4.0) and OrthodoxWiki (GFDL / CC BY-SA 2.5), credited on every Focus page; icons "
             "from Wikimedia Commons, OrthodoxWiki, Azbuka Very and the Mystagogy Resource Center; the day's "
             "feasts, fast and Scripture readings from orthocal.info.")

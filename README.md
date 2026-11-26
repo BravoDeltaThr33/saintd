@@ -27,24 +27,37 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ---
 
-## What's new in 2.3.1
+## What's new in 2.4
 
-- **The eagle of the Church of Greece.** In Kitty and Ghostty (and Sixel terminals) the double-headed eagle at the
-  head of the tab column is now the eagle of the flag of the Church of Greece, as it is drawn there: black lines on
-  the flag's yellow, the closed crown above the two heads, the **sword** in its right claw and the **orb with the
-  cross** in its left. Only the flag's ground is taken away.
-- **Truer light behind it.** When you switch tabs the light behind the eagle swells and fades like a flare. It comes
-  from behind the eagle, as from a lamp hung behind a carving: brightest right at its outline and falling away with
-  the distance, with shafts of light breaking out between the wings, the heads and the crown. It swells fast, fades
-  fast and then slowly, in sixteen steps; on the light scheme (Theophany) it is a tint of the scheme's colour.
+- **More saints, from Wikidata.** Building the directory now also asks Wikidata for the saints it gives a feast day,
+  keeps the ones it can tell are Eastern Orthodox (a title only the Orthodox use, such as passion-bearer or
+  great-martyr; an Orthodox church named for the saint or the feast; "Orthodox" in a description; an entry in
+  OrthodoxWiki or Drevo; the Orthodox faith as their religion), and adds those that none of the calendars has: mostly
+  New Martyrs of the 20th century, and monastics and hierarchs of Russia, Georgia, Greece and Romania. It leaves out
+  saints the Catholic Church canonized after the Schism, the saints of the Oriental churches, and those of the Old
+  Believers and Old Calendarists. A saint the directory already has (on another day, in a group, or under another
+  spelling) is not added again; one it misses is merged with it once background linking finds both are the same
+  Wikidata item. Russian names are put into English the way the calendars' are ("Sabbas Krypetsky", "Arsenius the
+  Lover of Labor"). Feast days are filed as church dates, and the saints' facts, picture and Wikipedia article come
+  from Wikidata as for every other saint. An existing directory adds them the next time saintd starts;
+  **Settings → Sources** can turn it off.
+- **The eagle of the Church of Greece** (since 2.3). In Kitty and Ghostty (and Sixel terminals) the double-headed
+  eagle at the head of the tab column is now the eagle of the flag of the Church of Greece, as it is drawn there:
+  black lines on the flag's yellow, the closed crown above the two heads, the **sword** in its right claw and the
+  **orb with the cross** in its left. Only the flag's ground is taken away.
+- **Truer light behind it** (since 2.3). When you switch tabs the light behind the eagle swells and fades like a
+  flare. It comes from behind the eagle, as from a lamp hung behind a carving: brightest right at its outline and
+  falling away with the distance, with shafts of light breaking out between the wings, the heads and the crown. It
+  swells fast, fades fast and then slowly, in sixteen steps; on the light scheme (Theophany) it is a tint of the
+  scheme's colour.
   ![The pulse](docs/pulse.png)
-- **A gilded kiot for the icons.** Icons now stand in a photographed gilded **kiot**, the case an icon stands in: a
-  round arch with its running vine and rows of beads, the **three-bar cross** under the arch, the head of the opening
-  cut in two arches that meet in a point under the cross, a **ruby** at the top and **silver rosettes** where the arch
-  springs from the sides and at the lower corners. The frame is made to the shape of each icon (only the straight
-  part of its sides grows or shrinks, so the arch, the cross and the corners are never distorted), the icon fills
-  the opening, and the frame casts its shadow on it. A saint without a picture gets the painted icon blank in the
-  same frame.
+- **A gilded kiot for the icons** (since 2.3). Icons now stand in a photographed gilded **kiot**, the case an icon
+  stands in: a round arch with its running vine and rows of beads, the **three-bar cross** under the arch, the head of
+  the opening cut in two arches that meet in a point under the cross, a **ruby** at the top and **silver rosettes**
+  where the arch springs from the sides and at the lower corners. The frame is made to the shape of each icon (only
+  the straight part of its sides grows or shrinks, so the arch, the cross and the corners are never distorted), the
+  icon fills the opening, and the frame casts its shadow on it. A saint without a picture gets the painted icon blank
+  in the same frame.
 
 ---
 
@@ -263,7 +276,7 @@ read as English ("Matrona of Thessalonica", "Xenia (Eusebia) of Mylasa", "Olga (
 | [Azbuka Very](https://azbyka.ru/days/) | Russian → English | Extra saints of the Russian calendar (many New Martyrs), the saint's Life when no English one exists, icons | Public pages |
 | [Mystagogy Resource Center](https://www.johnsanidopoulos.com/) (John Sanidopoulos) | English | Lives for saints the calendars have none for, especially Greek saints and New Martyrs | © its author; credited and linked |
 | [OrthodoxWiki](https://orthodoxwiki.org/) | English | The History section when Wikipedia has no article; always listed in Sources when it has one | GFDL / CC BY-SA 2.5 |
-| [Wikidata](https://www.wikidata.org/) | Multilingual | Gender, dates, birthplace and country, English names, the saint's picture, Wikipedia links | CC0 |
+| [Wikidata](https://www.wikidata.org/) | Multilingual | Gender, dates, birthplace and country, English names, the saint's picture, Wikipedia links; and Eastern Orthodox saints with a feast day that no calendar lists | CC0 |
 | [Wikipedia](https://www.wikipedia.org/) | English (others translated) | The History section | CC BY-SA 4.0 |
 | [Wikimedia Commons](https://commons.wikimedia.org/) | — | Icons (the saint's Wikidata picture) | As given for each file |
 | Translator of your choice | Any → English | Non-English articles and Russian lives | See below |
@@ -366,7 +379,7 @@ The code is in `saintd/`: `sources.py` (API clients), `sync.py` (building and Wi
 calendar), `owiki.py` (OrthodoxWiki), `icons.py` (finding and caching icons), `term.py` (terminal detection),
 `graphics.py` (Kitty, Sixel and colour-block pictures, the eagle's pulse), `art.py` (the kiot, icon blanks and
 the cross headpiece), `eagle.py` (the double-headed eagle and its steps of light), `assets/` (the pictures of the
-eagle and the kiot),
+eagle and the kiot), `wdsaints.py` (Orthodox saints from Wikidata),
 `themes.py` (colour schemes and liturgical colours), `paschalion.py` (Pascha, feasts and fasts), `tts.py` (reading
 aloud: engines, voices, players and the reader), `piper_worker.py` (Piper in its own process), `narration.py` (what is
 read), `ru.py` (Russian → English), `heuristics.py` (titles → facts), `article.py` (the Focus article),

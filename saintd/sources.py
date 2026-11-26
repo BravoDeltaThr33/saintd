@@ -98,7 +98,8 @@ SOURCES = [
         "lang": "Multilingual",
         "key": "None",
         "provides": "Gender, birth/death, birthplace & country, names, links (found by name, or through "
-                    "Wikipedia's full-text search when the spelling differs)",
+                    "Wikipedia's full-text search when the spelling differs); and, through its query service, "
+                    "Eastern Orthodox saints with a feast day that no calendar lists",
         "terms": "CC0 public domain data",
         "probe": "https://www.wikidata.org/w/api.php?action=query&meta=siteinfo&format=json",
     },
@@ -199,6 +200,27 @@ def azbyka_day(http: Http, month: int, day: int) -> dict:
 # --------------------------------------------------------------- wikimedia
 
 WD_API = "https://www.wikidata.org/w/api.php"
+WDQS = "https://query.wikidata.org/sparql"
+_ENTITY = "http://www.wikidata.org/entity/"
+
+
+def wdqs(http: Http, query: str, ttl: float = WEEK) -> list[dict[str, str]]:
+    """The rows of a SPARQL query on the Wikidata Query Service, each a dict of plain values:
+    an item's or property's id for its URI, the text of a literal (and, under "name@",
+    the language of a text that has one)."""
+    data = http.get_json(WDQS, {"query": query, "format": "json"}, ttl=ttl, timeout=90)
+    rows = []
+    for b in ((data or {}).get("results") or {}).get("bindings") or []:
+        row: dict[str, str] = {}
+        for k, v in b.items():
+            val = v.get("value", "")
+            if v.get("type") == "uri" and val.startswith(_ENTITY):
+                val = val[len(_ENTITY):]
+            row[k] = val
+            if v.get("xml:lang"):
+                row[k + "@"] = v["xml:lang"]
+        rows.append(row)
+    return rows
 
 
 def wd_search(http: Http, query: str, limit: int = 5) -> list[str]:
