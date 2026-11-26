@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saint-directory"
-version = "2.2.1"
+version = "2.3.0"
 description = "Saint Directory (saintd): a retro terminal guide to the saints of the Eastern Orthodox Church"
 readme = "README.md"
 requires-python = ">=3.10"

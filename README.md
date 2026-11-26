@@ -25,6 +25,30 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ---
 
+## What's new in 2.3
+
+- **The double-headed eagle, redrawn.** The eagle at the head of the tab column now follows the eagle of the Church
+  of Greece closely: the closed imperial crown floating between the heads, with its dark lobes, pearled arches and
+  cross; the heads turned outward, with hooked beaks, a stern eye under a heavy brow and a crest swept back; scaled
+  necks and breast; the wings raised from the shoulders, a band of small coverts along the leading edge and long
+  flight feathers, shadowed and notched, sweeping down to the lower corners; skirts of pointed thigh feathers over
+  ringed legs, the **sword** in its right claw and the **orb with the cross** in its left; the tail spread in a fan.
+  It is cast in relief now, every feather and scale raised and catching the light from the upper left, in a richer
+  gold.
+- **Truer light behind it.** The light comes from behind the eagle, as from a lamp hung behind a carving: brightest
+  right at its outline and falling away with the distance, with shafts of light breaking out between the wings, the
+  heads and the crown, and a gleam along the eagle's edges at the height of a pulse. A pulse swells quickly and fades
+  the way a flare does, fast at first and then slowly, in sixteen steps instead of ten. On the light scheme
+  (Theophany) the light is a tint of the scheme's colour.
+  ![The pulse](docs/pulse.png)
+- **A new frame for the icons.** Icons now stand in a gilded **kiot** cast in relief: a round arch over straight
+  sides; all round, a rounded rim, rows of beads and a band of running vine with its leaves, flowers and tendrils;
+  under the arch, the **three-bar cross** on a plate with trefoil ends between scrolls of vine; the head of the
+  opening cut in two arches that meet in a point under the cross; a **cabochon ruby** in a beaded, pierced setting at
+  the top; and **silver rosettes** where the arch springs from the sides and at the lower corners. The frame is made
+  to the shape of each icon (over a wide icon the arch is lowered), the icon fills the opening, and the frame casts
+  its shadow on it. A saint without a picture gets the painted icon blank in the same frame.
+
 ## What's new in 2.2.1
 
 - The glow behind the double-headed eagle now pulses **only when you switch tabs** — Home, Search, Focus or
@@ -40,7 +64,6 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
   and the **orb with the cross** in its left. It is painted for the size of your window — larger on tall terminals.
 - **The light behind it pulses** when you switch tabs: the glow behind the eagle swells into an aureole of rays and
   fades back. Every step of the light is sent to the terminal once, so the pulse costs nothing while you work.
-  ![The pulse](docs/pulse.png)
 - **The three-bar cross found its place** above the prayers: it heads the column of hymns in Focus and the
   troparion and kontakion in the icon view (**V**), like the headpiece of a page in a service book.
 - **Every control checked again** against what the screen says about it (the Help, the key lines, the buttons,
@@ -161,10 +184,10 @@ To uninstall: `pipx uninstall saint-directory` (and optionally
 | Inside tmux / screen | Colour-block mosaic | Multiplexers don't pass images on reliably |
 | Linux console | Off | An ornamental frame with the saint's initial |
 
-With true images (Kitty, Ghostty, Sixel) the icons stand in a gilded arched frame, saints without a picture get a
-painted icon blank, the gilded double-headed eagle heads the tab column — in Kitty and Ghostty the light behind it
-pulses when you switch tabs — the three-bar cross stands above the hymns, and **V** in Focus shows the icon as large
-as the window allows.
+With true images (Kitty, Ghostty, Sixel) the icons stand in a gilded kiot (an arched frame cast in relief), saints
+without a picture get a painted icon blank, the gilded double-headed eagle heads the tab column — in Kitty and Ghostty
+the light behind it pulses when you switch tabs — the three-bar cross stands above the hymns, and **V** in Focus shows
+the icon as large as the window allows.
 
 You can choose yourself in **Settings → Display & Pictures** (Automatic, Kitty, Sixel, Colour blocks or Off), or for
 one run with `SAINTD_GRAPHICS=blocks saintd`. Icons are downloaded only when you open a saint (or it is Saint of the

@@ -447,8 +447,8 @@ class Emblem(SaintIcon):
     DEFAULT_CSS = """
     Emblem { width: 100%; height: 6; }
     """
-    ATTACK = 0.14                   # seconds to the height of a pulse
-    DECAY = 0.85                    # seconds back to rest
+    ATTACK = 0.12                   # seconds to the height of a pulse
+    DECAY = 1.1                     # seconds back to rest
     FPS = 30
 
     def __init__(self, *, id: str | None = None, classes: str | None = None) -> None:
@@ -577,7 +577,7 @@ class Emblem(SaintIcon):
         else:
             self._energy = max(0.0, self._energy - dt / self.DECAY)
         e = self._energy
-        level = round(e * e * (3 - 2 * e) * (eagle.LEVELS - 1))     # eased in and out
+        level = round(e * e * (eagle.LEVELS - 1))       # like a flare: it swells fast, fades fast, then lingers
         if level != self.level:
             self.level = level
             self.refresh()
@@ -649,7 +649,7 @@ def warm_frames(sizes: list[tuple[int, int]], bg: tuple[int, int, int]) -> None:
     cw, ch = (cw, ch) if cw and ch else (10, 20)
     for w, h in sizes:
         try:
-            art._frame_parts(w * cw, h * ch, bg)
+            art.warm(w * cw, h * ch, bg)
         except Exception:
             pass
 
