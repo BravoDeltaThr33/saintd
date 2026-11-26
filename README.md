@@ -25,6 +25,19 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ---
 
+## What's new in 2.3.1
+
+- **The eagle of the Church of Greece, as it is.** The eagle at the head of the tab column is now the eagle of the flag
+  of the Church of Greece itself (black lines on the flag's yellow, the crown above the two heads, the sword and the
+  orb), with only the flag's ground taken away, in place of the eagle drawn for 2.3. The light behind it is as in
+  2.3: it hugs the eagle's outline and breaks out between the wings, the heads and the crown when you switch tabs.
+  ![The pulse](docs/pulse.png)
+- **The kiot, as photographed.** Icons now stand in a photograph of a gilded kiot (the round arch with its vine and
+  beads, the three-bar cross under it, the ruby at the top and the silver rosettes) in place of the frame drawn for
+  2.3. For an icon of another shape only the straight part of the sides is made longer or shorter, so the arch, the
+  cross and the corners are never distorted; the icon fills the opening, and the frame casts its shadow on it. A
+  saint without a picture gets the painted icon blank in the same frame.
+
 ## What's new in 2.3
 
 - **The double-headed eagle, redrawn.** The eagle at the head of the tab column now follows the eagle of the Church
@@ -40,7 +53,6 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
   heads and the crown, and a gleam along the eagle's edges at the height of a pulse. A pulse swells quickly and fades
   the way a flare does, fast at first and then slowly, in sixteen steps instead of ten. On the light scheme
   (Theophany) the light is a tint of the scheme's colour.
-  ![The pulse](docs/pulse.png)
 - **A new frame for the icons.** Icons now stand in a gilded **kiot** cast in relief: a round arch over straight
   sides; all round, a rounded rim, rows of beads and a band of running vine with its leaves, flowers and tendrils;
   under the arch, the **three-bar cross** on a plate with trefoil ends between scrolls of vine; the head of the
