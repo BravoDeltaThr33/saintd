@@ -11,6 +11,7 @@ smooth edges; every picture is kept so it is made once."""
 from __future__ import annotations
 
 import math
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -28,13 +29,22 @@ GOLD_EDGE = (58, 38, 8)
 MAT = (70, 20, 18)                      # the dark red cloth behind an icon, should it not fill its place
 CINNABAR = (150, 32, 22)
 
+_WINFONTS = Path(os.environ.get("SystemRoot") or "C:/Windows") / "Fonts"
 FONTS = [
+    # Linux
     "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
     "/usr/share/fonts/truetype/noto/NotoSerif-Bold.ttf",
     "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf",
     "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    # macOS
+    "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+    "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+    "/Library/Fonts/Georgia Bold.ttf",
+    # Windows
+    str(_WINFONTS / "georgiab.ttf"),
+    str(_WINFONTS / "timesbd.ttf"),
 ]
 
 

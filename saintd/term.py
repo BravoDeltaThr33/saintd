@@ -3,11 +3,12 @@
 Two sources of evidence are combined:
 
 * the environment variables terminals set (TERM_PROGRAM, KITTY_WINDOW_ID,
-  VTE_VERSION, KONSOLE_VERSION, ...), and
+  VTE_VERSION, KONSOLE_VERSION, WT_SESSION, ...), and
 * the terminal's own answers to a few standard queries, sent once before the
   interface starts: XTVERSION (name and version), a Kitty graphics query,
   the cell size in pixels and Primary Device Attributes (whose "4" means
-  Sixel graphics).
+  Sixel graphics). On Linux and macOS they are read from the terminal device;
+  on Windows from the console's input, where the answers arrive as if typed.
 
 The result decides how saint icons are drawn:
 
@@ -24,6 +25,8 @@ import re
 import sys
 import time
 from dataclasses import dataclass, field
+
+from .system import WINDOWS
 
 GRAPHICS_MODES = ("kitty", "sixel", "blocks", "off")
 MODE_LABELS = {
@@ -53,7 +56,7 @@ _SIXEL_NAMES = {"wezterm", "foot", "konsole", "mlterm", "contour", "iterm2", "xt
                 "rio", "windows terminal", "warp"}
 _TRUECOLOR_NAMES = {"kitty", "ghostty", "wezterm", "iterm2", "konsole", "alacritty", "foot", "windows terminal",
                     "contour", "rio", "tilix", "gnome terminal", "terminator", "vte", "warp", "vs code", "hyper",
-                    "mintty", "xfce terminal", "blackbox", "terminology", "tabby", "st"}
+                    "mintty", "xfce terminal", "blackbox", "terminology", "tabby", "st", "conhost"}
 
 
 @dataclass
@@ -220,6 +223,9 @@ def from_environment(env: dict | None = None) -> TermInfo:
         setn("Terminal inside tmux", "", "")
     elif term:
         setn(f"Unknown terminal ({term})", "", "")
+    elif WINDOWS:
+        # the console window of Windows 10 and 11 (cmd, PowerShell): 24-bit colour, no images
+        setn("Windows console", "conhost", "")
 
     ct = e.get("COLORTERM", "").lower()
     info.truecolor = ct in ("truecolor", "24bit") or info.family in _TRUECOLOR_NAMES
@@ -309,14 +315,32 @@ def _cell_px_ioctl() -> tuple[int, int]:
     return (0, 0)
 
 
+def _queries(info: TermInfo) -> str:
+    queries = "\x1b[>0q"                                            # XTVERSION
+    if not WINDOWS and info.family in ("", "kitty", "ghostty", "wezterm", "konsole", "xterm", "foot", "contour",
+                                       "iterm2", "rio"):
+        queries += "\x1b_Gi=4242,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"  # Kitty graphics
+    if not info.cell_px[0]:
+        queries += "\x1b[16t"                                       # cell size in pixels
+    return queries + "\x1b[c"                                       # DA1: every terminal answers this
+
+
 def probe(info: TermInfo, timeout: float = 0.35) -> TermInfo:
     """Ask the terminal about itself. Only call this before the interface
     starts (afterwards Textual owns the input)."""
-    if os.environ.get("SAINTD_NO_PROBE") or info.term in ("linux", "dumb", ""):
+    if os.environ.get("SAINTD_NO_PROBE") or info.term in ("linux", "dumb") or (info.term == "" and not WINDOWS):
         return info
     try:
         if not (sys.__stdin__ and sys.__stdout__ and sys.__stdin__.isatty() and sys.__stdout__.isatty()):
             return info
+    except Exception:
+        return info
+    if WINDOWS:
+        try:
+            return apply_answers(info, _ask_windows_console(_queries(info), timeout))
+        except Exception:
+            return info
+    try:
         import select
         import termios
         import tty
@@ -324,12 +348,7 @@ def probe(info: TermInfo, timeout: float = 0.35) -> TermInfo:
         return info
     info.cell_px = _cell_px_ioctl()
     fd = sys.__stdin__.fileno()
-    queries = "\x1b[>0q"                                            # XTVERSION
-    if info.family in ("", "kitty", "ghostty", "wezterm", "konsole", "xterm", "foot", "contour", "iterm2", "rio"):
-        queries += "\x1b_Gi=4242,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\"  # Kitty graphics
-    if not info.cell_px[0]:
-        queries += "\x1b[16t"                                       # cell size in pixels
-    queries += "\x1b[c"                                             # DA1: every terminal answers this
+    queries = _queries(info)
     try:
         old = termios.tcgetattr(fd)
     except Exception:
@@ -362,6 +381,67 @@ def probe(info: TermInfo, timeout: float = 0.35) -> TermInfo:
         except Exception:
             pass
     return apply_answers(info, got)
+
+
+def _ask_windows_console(queries: str, timeout: float) -> str:
+    """Windows: send the queries and read the answers, which the console hands
+    over as typed characters once virtual-terminal input is on. Never blocks:
+    only the events already waiting are read."""
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    class KEY_EVENT_RECORD(ctypes.Structure):
+        _fields_ = [("bKeyDown", wintypes.BOOL), ("wRepeatCount", wintypes.WORD),
+                    ("wVirtualKeyCode", wintypes.WORD), ("wVirtualScanCode", wintypes.WORD),
+                    ("UnicodeChar", wintypes.WCHAR), ("dwControlKeyState", wintypes.DWORD)]
+
+    class EVENT(ctypes.Union):
+        _fields_ = [("KeyEvent", KEY_EVENT_RECORD), ("raw", ctypes.c_byte * 16)]
+
+    class INPUT_RECORD(ctypes.Structure):
+        _fields_ = [("EventType", wintypes.WORD), ("Event", EVENT)]
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    k32.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    k32.FlushConsoleInputBuffer.argtypes = [wintypes.HANDLE]
+    k32.GetNumberOfConsoleInputEvents.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    k32.ReadConsoleInputW.argtypes = [wintypes.HANDLE, ctypes.POINTER(INPUT_RECORD), wintypes.DWORD,
+                                      ctypes.POINTER(wintypes.DWORD)]
+    hin = wintypes.HANDLE(msvcrt.get_osfhandle(sys.__stdin__.fileno()))
+    hout = wintypes.HANDLE(msvcrt.get_osfhandle(sys.__stdout__.fileno()))
+    in_mode, out_mode = wintypes.DWORD(), wintypes.DWORD()
+    if not k32.GetConsoleMode(hin, ctypes.byref(in_mode)) or not k32.GetConsoleMode(hout, ctypes.byref(out_mode)):
+        return ""                                       # not a console
+    ENABLE_VIRTUAL_TERMINAL_INPUT, ENABLE_PROCESSED_OUTPUT, ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x200, 0x1, 0x4
+    got = ""
+    try:
+        k32.SetConsoleMode(hin, ENABLE_VIRTUAL_TERMINAL_INPUT)       # no echo, no line editing
+        k32.SetConsoleMode(hout, out_mode.value | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+        k32.FlushConsoleInputBuffer(hin)
+        sys.__stdout__.write(queries)
+        sys.__stdout__.flush()
+        records = (INPUT_RECORD * 64)()
+        n = wintypes.DWORD()
+        end = time.monotonic() + timeout
+        while time.monotonic() < end and not _DA1.search(got):       # the DA1 answer comes last
+            if not k32.GetNumberOfConsoleInputEvents(hin, ctypes.byref(n)):
+                break
+            if not n.value:
+                time.sleep(0.005)
+                continue
+            if not k32.ReadConsoleInputW(hin, records, len(records), ctypes.byref(n)):
+                break
+            for r in records[:n.value]:
+                key = r.Event.KeyEvent
+                if r.EventType == 1 and key.bKeyDown and key.UnicodeChar not in ("", "\0"):
+                    got += key.UnicodeChar
+    finally:
+        k32.FlushConsoleInputBuffer(hin)                            # nothing of it reaches the interface
+        k32.SetConsoleMode(hin, in_mode.value)
+        k32.SetConsoleMode(hout, out_mode.value)
+    return got
 
 
 _INFO: TermInfo | None = None

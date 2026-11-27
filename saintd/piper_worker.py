@@ -20,8 +20,8 @@ import wave
 
 def main() -> int:
     try:
-        os.nice(5)
-    except OSError:
+        os.nice(5)                                 # Windows has no nice(): saintd starts it at a lower priority
+    except (OSError, AttributeError):
         pass
     try:
         import onnxruntime

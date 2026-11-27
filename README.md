@@ -1,6 +1,6 @@
 # ☦ Saint Directory (`saintd`)
 
-A retro, earthy terminal guide to the saints of the Eastern Orthodox Church, for Linux.
+A retro, earthy terminal guide to the saints of the Eastern Orthodox Church, for Linux, macOS and Windows.
 
 Saint Directory builds a local directory of **~10,500 saints and groups** from free public sources and opens each one
 like a page of the Synaxarion: the saint's **icon**, the **Life**, the **troparion and kontakion**, the **history**
@@ -26,6 +26,21 @@ F1 Home  F2 Search  F3 Focus  F4 Settings  P listen  ? Help  / search box  Esc t
 All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ---
+
+## What's new in 2.5
+
+- **macOS and Windows.** Saint Directory now runs on macOS and Windows as well as Linux. `install.sh` installs it on
+  macOS too, and the new `install.ps1` installs it on Windows (see [Install](#install)). On Windows the directory,
+  settings and icons are kept in your AppData folders.
+- **Reading aloud on every system.** macOS reads with its own voices, Windows with its own voices, and Piper's
+  natural voices work on all three. Pause and resume work there too: the sound stops at once, and Resume plays on
+  from where it stopped.
+- **Pictures on macOS and Windows.** Kitty and Ghostty on macOS show true images, as on Linux. Windows Terminal 1.22
+  and newer shows still images (Sixel), and the Windows console and Terminal.app get colour blocks.
+- **More on one screen.** Below 180×44 the tabs run in a strip along the top, the saints of the day take one row
+  each, and from 120×30 Home is a three-column dashboard that fits the window without scrolling.
+- **Cleaner upgrades.** `install.sh` removes files left over from an older version, checks your PATH, and
+  `./install.sh --no-pipx` installs without pipx even when you have it.
 
 ## What's new in 2.4
 
@@ -63,8 +78,13 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ## Install
 
-You need Linux with **Python 3.10 or newer** (Ubuntu 22.04, Debian 12, Linux Mint 21 and anything newer already have
-it), plus `git` and `pipx` for the easiest install:
+You need **Python 3.10 or newer** and `git`. No git? Click **Code → Download ZIP** at the top of this page, unzip it,
+and run the installer from the unzipped folder instead of cloning.
+
+### Linux
+
+Ubuntu 22.04, Debian 12, Linux Mint 21 and anything newer already have Python 3.10. With `pipx` the install is
+easiest:
 
 ```bash
 sudo apt install git pipx python3-venv         # once (Debian, Ubuntu, Linux Mint)
@@ -75,22 +95,65 @@ cd saintd
 saintd
 ```
 
-No git? Click **Code → Download ZIP** at the top of this page, unzip it, open a terminal in the unzipped folder and
-run `./install.sh`.
+### macOS
 
-`install.sh` installs with pipx when present (otherwise into a private virtual environment in
-`~/.local/share/saintd-venv`, linked into `~/.local/bin`) and adds **Piper** for natural reading voices
-(`pipx inject saint-directory piper-tts`). Without Piper, reading aloud uses the voices your system has. If you add
-pipx later, the next `./install.sh` installs with pipx and removes that private environment.
+The Python that comes with macOS is too old. Install a newer one with [Homebrew](https://brew.sh) (or the installer
+from [python.org](https://www.python.org/downloads/)); `git` comes with Apple's command-line tools, which macOS
+offers to install the first time you use it.
+
+```bash
+brew install python pipx                        # once
+pipx ensurepath                                 # once, then open a new terminal
+git clone https://github.com/BravoDeltaThr33/saintd.git
+cd saintd
+./install.sh
+saintd
+```
+
+Kitty and Ghostty show the icons as true pictures; Terminal.app shows them as colour blocks.
+
+### Windows
+
+In **Windows Terminal** (it comes with Windows 11; on Windows 10 get it from the Microsoft Store), install Python and
+Git once, then open a new terminal:
+
+```powershell
+winget install Python.Python.3.13 Git.Git
+```
+
+Then:
+
+```powershell
+git clone https://github.com/BravoDeltaThr33/saintd.git
+cd saintd
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+Open a new terminal and start it with `saintd`. (`-ExecutionPolicy Bypass` lets this one script run; Windows
+refuses to run scripts otherwise.)
+
+### What the installers do
+
+`install.sh` (Linux, macOS) and `install.ps1` (Windows) install with pipx when you have it, otherwise into a private
+virtual environment in `~/.local/share/saintd-venv` (on Windows `%USERPROFILE%\.local\share\saintd-venv`), with
+the `saintd` command in `~/.local/bin`. On Windows that folder is added to your PATH. They also add **Piper** for
+natural reading voices. Without Piper, reading aloud uses the voices your computer has. If you add pipx later, the
+next install uses it and removes the private environment. `./install.sh --no-pipx` (or `install.ps1 -NoPipx`) always
+uses the private environment.
 
 ### Upgrading
 
-In the folder you cloned, run `git pull` and then `./install.sh` (or `pipx install --force .` followed by
-`pipx inject --force saint-directory piper-tts`). This replaces the program and keeps your directory, settings,
-saved saints, linked saints and downloaded voices. New dependencies are downloaded automatically.
+In the folder you cloned, run `git pull` and then the installer again: `./install.sh`, or on Windows
+`powershell -ExecutionPolicy Bypass -File install.ps1` (quit saintd first). This replaces the program and keeps your
+directory, settings, saved saints, linked saints and downloaded voices. New dependencies are downloaded
+automatically.
 
-To uninstall: `pipx uninstall saint-directory` (and optionally
-`rm -rf ~/.local/share/saintd ~/.config/saintd ~/.cache/saintd`).
+### Uninstalling
+
+`pipx uninstall saint-directory`, or, without pipx, delete `~/.local/share/saintd-venv` and `~/.local/bin/saintd`
+(on Windows `%USERPROFILE%\.local\share\saintd-venv` and `%USERPROFILE%\.local\bin\saintd.exe`). Your directory
+and settings are kept apart: delete them too with `rm -rf ~/.local/share/saintd ~/.config/saintd ~/.cache/saintd`
+(on Windows, the `saintd` folders in `%APPDATA%` and `%LOCALAPPDATA%`).
 
 ---
 
@@ -101,10 +164,10 @@ the Kitty graphics query, the cell size and the device attributes) and picks the
 
 | Terminal | Pictures | Notes |
 |---|---|---|
-| **Kitty** 0.28+ | True images (Kitty graphics) | Best quality |
-| **Ghostty** 1.0+ | True images (Kitty graphics) | Best quality |
-| WezTerm, foot, Konsole 22.04+, mlterm, xterm `-ti vt340` | True images (Sixel) | Detected from the terminal's answer |
-| GNOME Terminal, Xfce Terminal, Tilix, Alacritty, others with 24-bit colour | Colour-block mosaic | Two pixels per character cell |
+| **Kitty** 0.28+ (Linux, macOS) | True images (Kitty graphics) | Best quality |
+| **Ghostty** 1.0+ (Linux, macOS) | True images (Kitty graphics) | Best quality |
+| WezTerm, foot, Konsole 22.04+, mlterm, xterm `-ti vt340`, iTerm2, Windows Terminal 1.22+ | True images (Sixel) | Detected from the terminal's answer |
+| GNOME Terminal, Xfce Terminal, Tilix, Alacritty, Terminal.app, the Windows console, others with 24-bit or 256 colours | Colour-block mosaic | Two pixels per character cell |
 | Inside tmux / screen | Colour-block mosaic | Multiplexers don't pass images on reliably |
 | Linux console | Off | An ornamental frame with the saint's initial |
 
@@ -146,16 +209,19 @@ being read, how far it has got, the voice and the speed, with buttons for the mo
 
 | Engine | Sound | Install |
 |---|---|---|
-| **Piper** | Natural neural voices, offline. Voices (60–115 MB each: Alan, Ryan, Cori, Lessac, Northern English, John, Norman, Jenny…) are downloaded once from the [Piper voices](https://huggingface.co/rhasspy/piper-voices) collection — saintd offers some the first time you listen, and **Settings → Voice & Reading aloud** has them all | `install.sh` adds it; or `pipx inject saint-directory piper-tts`, or **Install Piper** in Settings |
-| **RHVoice** | Clear classic voices | `sudo apt install rhvoice rhvoice-english` |
-| **SVOX Pico** | A clear female voice (British or American) | `sudo apt install libttspico-utils` |
-| **eSpeak NG** | Robotic but light, many accents | `sudo apt install espeak-ng` |
-| **Speech Dispatcher** | The desktop's speech service and its voices | Usually installed already |
-| **Festival** | The classic Edinburgh system | `sudo apt install festival` |
+| **Piper** (all) | Natural neural voices, offline. Voices (60–115 MB each: Alan, Ryan, Cori, Lessac, Northern English, John, Norman, Jenny…) are downloaded once from the [Piper voices](https://huggingface.co/rhasspy/piper-voices) collection — saintd offers some the first time you listen, and **Settings → Voice & Reading aloud** has them all | The installers add it; or `pipx inject saint-directory piper-tts`, or **Install Piper** in Settings |
+| **macOS voices** | The voices of macOS (Samantha, Daniel, Karen…); System Settings → Accessibility → Spoken Content adds more, and its voice is the one used unless you choose another | Come with macOS |
+| **Windows voices** | The voices of Windows (David, Zira…) | Come with Windows |
+| **RHVoice** (Linux) | Clear classic voices | `sudo apt install rhvoice rhvoice-english` |
+| **SVOX Pico** (Linux) | A clear female voice (British or American) | `sudo apt install libttspico-utils` |
+| **eSpeak NG** (all) | Robotic but light, many accents | `sudo apt install espeak-ng`; on macOS `brew install espeak-ng`; on Windows the installer from [its releases](https://github.com/espeak-ng/espeak-ng/releases) |
+| **Speech Dispatcher** (Linux) | The desktop's speech service and its voices | Usually installed already |
+| **Festival** (Linux) | The classic Edinburgh system | `sudo apt install festival` |
 
-*Automatic* picks the first that works, in that order. Settings also lists which engines and audio player this
-computer has, the voice in use, the speed, and switches for highlighting, the hymns and the history. Sound is played
-with `pw-play`, `paplay` or `aplay` (any of them is enough). Abbreviations, Scripture references and regnal numbers
+*Automatic* picks the first that works, in the order shown, from the engines your system can have. Settings also
+lists which engines and audio player this computer has, the voice in use, the speed, and switches for highlighting,
+the hymns and the history. On Linux sound is played with `pw-play`, `paplay` or `aplay` (any of them is enough); macOS
+plays it with `afplay` and Windows with its own sound system. Abbreviations, Scripture references and regnal numbers
 are read in words ("Colossians 4.10-18" → "Colossians, chapter 4, verses 10 to 18"; "Joseph I" → "Joseph the First").
 
 ---
@@ -179,8 +245,8 @@ The **tab column** on the left has the cursor when saintd starts: **Tab / Shift+
 **Enter** (or →) steps into the page; **Esc** brings you back to it. **F1–F4** open a tab from anywhere. The page's
 own keys (T, N, [ ], …) also work while the cursor is on the tab column.
 
-Below 180 columns or 44 rows the tabs run along one row under the title bar instead (as in sportst and skydrop),
-so the pages get the column's width: there **← →** move between tabs and **↓** steps into the page, and the status
+Below 180 columns or 44 rows the tabs run along one row under the title bar instead, so the pages get the
+column's width: there **← →** move between tabs and **↓** steps into the page, and the status
 bar shows the open page's keys.
 
 | Tab | What it shows |
@@ -335,17 +401,18 @@ saintd --version
 
 ### Where saintd keeps its files
 
-| What | Where |
-|---|---|
-| The directory, lives, articles, saved saints, downloaded API responses and translations (one SQLite file, about 50 MB) | `~/.local/share/saintd/saints.db` |
-| Your settings (theme, calendar, pictures, sources, translator, contact) | `~/.config/saintd/config.json` |
-| Downloaded icons (safe to delete) | `~/.cache/saintd/icons/` |
-| Downloaded Piper voices | `~/.local/share/saintd/voices/` |
-| The program itself (pipx install) | `~/.local/share/pipx/venvs/saint-directory/`, started by `~/.local/bin/saintd` |
-| The program itself (`install.sh` without pipx) | `~/.local/share/saintd-venv/`, started by `~/.local/bin/saintd` |
+| What | Linux and macOS | Windows |
+|---|---|---|
+| The directory, lives, articles, saved saints, downloaded API responses and translations (one SQLite file, about 50 MB) | `~/.local/share/saintd/saints.db` | `%LOCALAPPDATA%\saintd\saints.db` |
+| Your settings (theme, calendar, pictures, sources, translator, contact) | `~/.config/saintd/config.json` | `%APPDATA%\saintd\config.json` |
+| Downloaded icons (safe to delete) | `~/.cache/saintd/icons/` | `%LOCALAPPDATA%\saintd\Cache\icons\` |
+| Downloaded Piper voices | `~/.local/share/saintd/voices/` | `%LOCALAPPDATA%\saintd\voices\` |
+| The program itself (pipx install) | pipx's folder (`pipx list` shows it), started by `~/.local/bin/saintd` | the same, started by `%USERPROFILE%\.local\bin\saintd.exe` |
+| The program itself (installed without pipx) | `~/.local/share/saintd-venv/`, started by `~/.local/bin/saintd` | `%USERPROFILE%\.local\share\saintd-venv\`, started by `%USERPROFILE%\.local\bin\saintd.exe` |
 
 Copy `saints.db` to back up your linked directory and saved saints. Set `SAINTD_HOME` to keep data, settings and
-cache somewhere else.
+cache somewhere else (on Linux and macOS the `XDG_DATA_HOME`, `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` variables are
+followed too).
 
 ---
 
@@ -364,8 +431,15 @@ cache somewhere else.
   Wikidata merges such duplicates as it works through the directory.
 - **Boxes instead of symbols** — Settings → Color Scheme → Symbols → Plain ASCII.
 - **Reading aloud is silent** — Settings → Voice & Reading aloud lists the engines and the audio player found; press
-  **Test voice**. With no player, `sudo apt install pipewire-bin` (or `pulseaudio-utils`). With no engine,
-  `sudo apt install espeak-ng`, or install Piper there.
+  **Test voice**. On Linux, with no player, `sudo apt install pipewire-bin` (or `pulseaudio-utils`); with no engine,
+  `sudo apt install espeak-ng`, or install Piper there. On macOS and Windows check that a sound output is chosen and
+  not muted.
+- **"Running scripts is disabled on this system"** (Windows) — start the installer as
+  `powershell -ExecutionPolicy Bypass -File install.ps1`.
+- **`saintd` is not found after installing** — open a new terminal (the installers print the full path to use until
+  then). On Windows the installer adds `%USERPROFILE%\.local\bin` to your PATH; with pipx, run `pipx ensurepath`.
+- **Odd symbols or a plain look on Windows** — use Windows Terminal rather than the old console window, or choose
+  **Plain ASCII** symbols in Settings.
 - **The layout looks cramped** — the dashboards appear from about 150×34 characters; maximise the window or use a
   smaller font. The layout follows the window as you resize it.
 
@@ -374,7 +448,7 @@ cache somewhere else.
 ## Development
 
 ```bash
-python3 -m venv .venv && . .venv/bin/activate
+python3 -m venv .venv && . .venv/bin/activate          # Windows: py -m venv .venv; .venv\Scripts\activate
 pip install -e .
 saintd
 ```
@@ -382,7 +456,8 @@ saintd
 The code is in `saintd/`: `sources.py` (API clients), `sync.py` (building and Wikidata linking), `wikical.py`
 (Wikipedia's Orthodox calendar pages), `lives.py` (Mystagogy and Azbuka Very lives), `htc.py` (the Holy Trinity
 calendar), `owiki.py` (OrthodoxWiki), `icons.py` (finding and caching icons), `term.py` (terminal detection),
-`graphics.py` (Kitty, Sixel and colour-block pictures, the eagle's pulse), `art.py` (the kiot, icon blanks and
+`graphics.py` (Kitty, Sixel and colour-block pictures, the eagle's pulse), `system.py` (what differs between Linux,
+macOS and Windows), `art.py` (the kiot, icon blanks and
 the cross headpiece), `eagle.py` (the double-headed eagle and its steps of light), `assets/` (the pictures of the
 eagle and the kiot), `wdsaints.py` (Orthodox saints from Wikidata),
 `themes.py` (colour schemes and liturgical colours), `paschalion.py` (Pascha, feasts and fasts), `tts.py` (reading

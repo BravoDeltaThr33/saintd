@@ -10,6 +10,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, MarkdownViewer, Static
 
+from .. import system
 from .common import MONTHS, WEEKDAYS, glyphs, keys
 
 HELP = """\
@@ -100,7 +101,7 @@ the saints who share them and the sources stand in a column beside the life.
 The paragraph being read is highlighted and kept in view; the bar above the status line shows
 what is read, how far, the voice and the speed, with buttons for the mouse. Choose the engine, the
 voice and the speed in **Settings → Voice & Reading aloud**: Piper's natural voices (downloaded once,
-then offline), RHVoice, SVOX Pico, eSpeak NG, Speech Dispatcher or Festival.
+then offline), {engines}.
 
 ## Words you will meet
 
@@ -131,7 +132,9 @@ then offline), RHVoice, SVOX Pico, eSpeak NG, Speech Dispatcher or Festival.
 def help_text(g: dict) -> str:
     """The help, drawn with the symbols in use (Unicode or Plain ASCII)."""
     keys_ = ("arrows", "updown", "right", "saved", "prev", "next", "rank6", "rank5", "rank4", "rank3", "rank2", "fast")
-    return HELP.format(**{k: g[k] for k in keys_})
+    engines = system.pick("RHVoice, SVOX Pico, eSpeak NG, Speech Dispatcher or Festival",
+                          "the voices of macOS or eSpeak NG", "the voices of Windows or eSpeak NG")
+    return HELP.format(engines=engines, **{k: g[k] for k in keys_})
 
 
 class HelpScreen(ModalScreen):
