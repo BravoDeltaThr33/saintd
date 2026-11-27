@@ -36,7 +36,8 @@ Issues = "https://github.com/BravoDeltaThr33/saintd/issues"
 saintd = "saintd.cli:main"
 
 [tool.setuptools]
-packages = ["saintd", "saintd.ui"]
+packages = ["saintd", "saintd.ui", "saintd.assets"]
 
 [tool.setuptools.package-data]
-saintd = ["*.tcss", "assets/*.png"]
+saintd = ["*.tcss"]
+"saintd.assets" = ["*.png"]
