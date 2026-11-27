@@ -98,15 +98,20 @@ class SaintDirectoryApp(App):
         yield StatusBar(id="statusbar")
 
     SIZE_CLASSES = ("-stack", "-compact", "-narrow", "-medium", "-wide", "-xwide", "-low", "-short", "-roomy",
-                    "-tall", "-xtall", "-fill")
+                    "-tall", "-xtall", "-fill", "-pile", "-strip")
 
     @staticmethod
     def size_classes_for(w: int, h: int) -> dict[str, bool]:
         return {"-stack": w < 72, "-compact": w < 92, "-narrow": w < 120, "-medium": 120 <= w < 150, "-wide": w >= 150,
                 "-xwide": w >= 180, "-low": h < 28, "-short": h < 34, "-roomy": h >= 38, "-tall": h >= 44,
                 "-xtall": h >= 60,
-                # the dashboard layouts that fill the whole window
-                "-fill": w >= 150 and h >= 34}
+                # the tabs as one row under the title bar, unless the terminal is big enough
+                # for the tab column and its eagle without crowding the pages
+                "-strip": w < 180 or h < 44,
+                # the dashboard layouts that fill the whole window (no scrolling)
+                "-fill": w >= 120 and h >= 30,
+                # smaller: Home's panels in a grid, the saint of the day and readings under the rest
+                "-pile": 72 <= w < 150 and not (w >= 120 and h >= 30)}
 
     def _size_classes(self, size=None) -> None:
         """Layout classes for the terminal size (one restyle, and only when they change)."""
@@ -118,6 +123,10 @@ class SaintDirectoryApp(App):
         if add or remove:
             scr.set_classes([c for c in scr.classes if c not in self.SIZE_CLASSES] +
                             [c for c, on in want.items() if on])
+            if ("-strip" in add or "-strip" in remove) and getattr(self, "w_rail", None) is not None:
+                # the tabs moved between the column and the strip: label them (and the status bar) again
+                self.call_after_refresh(self.w_rail.refresh_tabs)
+                self.call_after_refresh(lambda: self.w_status.set_keys(getattr(self.w_status, "_extra", "")))
             for page in ("w_home", "w_search", "w_focus", "w_settings"):
                 p = getattr(self, page, None)
                 if p is not None and hasattr(p, "layout_changed"):

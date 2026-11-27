@@ -25,7 +25,7 @@ HELP = """\
 | **F4** | Settings |
 | **/** | Jump to the search box |
 | **?** | This help (press again or Esc to close) |
-| **Esc** | Put the cursor on the tab column (Tab, Shift+Tab, {updown} move; Enter or {right} opens the tab) |
+| **Esc** | Put the cursor on the tabs (Tab, Shift+Tab, {updown} move, or ← → when the tabs run along the top; Enter or {right} opens the tab, or ↓ along the top) |
 | **Ctrl+B** | Build or update the directory |
 | **Ctrl+Q** | Quit |
 | **P** | Listen: read aloud what the page offers — press again to pause or resume (see below) |

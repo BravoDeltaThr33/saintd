@@ -122,6 +122,11 @@ class RailTab(Static):
         g = glyphs(self.app)
         cw = self.content_size.width or 16
         t = Text(no_wrap=True, overflow="crop")
+        if _strip(self.app):                          # one row of tabs across the top
+            t.append(f"{FKEYS[self.tab_id]} ", style="" if active else "dim")
+            t.append(f"{g[self.tab_id]} {self.label}", style="bold" if active else "")
+            set_content(self, t)
+            return
         if cw < 10:                                   # icon-only tab column on small terminals
             t.append(g[self.tab_id], style="bold" if active else "")
             set_content(self, t, layout=False)
@@ -141,17 +146,25 @@ class RailTab(Static):
         self.app.show_tab(self.tab_id, focus_page=True)
 
 
+def _strip(app) -> bool:
+    """The tabs run along one row under the title bar (all but the biggest terminals)."""
+    scr = getattr(app, "w_screen", None)
+    return scr is not None and scr.has_class("-strip")
+
+
 class TabRail(Vertical, can_focus=True):
-    """Column of tabs. While focused: Tab/Shift+Tab or Up/Down move between
-    tabs; Enter or Right steps into the page."""
+    """Column of tabs (or, as a strip, one row of them). While focused: Tab/Shift+Tab
+    or Up/Down (Left/Right in the strip) move between tabs; Enter or Right (Down in
+    the strip) steps into the page."""
 
     BINDINGS = [
         Binding("tab", "move(1)", "Next tab", show=False),
         Binding("shift+tab", "move(-1)", "Previous tab", show=False),
-        Binding("down", "move(1)", show=False),
-        Binding("up", "move(-1)", show=False),
+        Binding("down", "arrow('down')", show=False),
+        Binding("up", "arrow('up')", show=False),
+        Binding("left", "arrow('left')", show=False),
         Binding("enter", "enter_page", "Open", show=False),
-        Binding("right", "enter_page", show=False),
+        Binding("right", "arrow('right')", show=False),
     ]
 
     active: reactive[str] = reactive("home")
@@ -225,6 +238,14 @@ class TabRail(Vertical, can_focus=True):
         ids = [t for t, _ in TABS]
         i = (ids.index(self.active) + step) % len(ids)
         self.app.show_tab(ids[i], focus_page=False)
+
+    def action_arrow(self, key: str) -> None:
+        if _strip(self.app):
+            {"left": lambda: self.action_move(-1), "right": lambda: self.action_move(1),
+             "down": self.action_enter_page}.get(key, lambda: None)()
+        else:
+            {"up": lambda: self.action_move(-1), "down": lambda: self.action_move(1),
+             "right": self.action_enter_page}.get(key, lambda: None)()
 
     def action_enter_page(self) -> None:
         self.app.focus_page()
@@ -305,11 +326,15 @@ class StatusBar(Horizontal):
                 ("^B", "Build"), ("Esc", "Tabs"), ("^Q", "Quit"))
         if width < 110:
             keys = (("F1", "Home"), ("F2", "Find"), ("F3", "Focus"), ("F4", "Set"), ("?", "Help"), ("^Q", "Quit"))
+        strip = _strip(self.app)
+        if strip:                       # the tab strip shows F1-F4: room for the page's own keys
+            keys = (("?", "Help"), ("^B", "Build"), ("Esc", "Tabs"), ("^Q", "Quit"))
         for k, v in keys:
             t.append(f" {k} ", style="reverse bold")
             t.append(f" {v} ")
-        if extra and width >= 170:
+        if extra and (width >= 170 or strip):
             t.append("  " + extra, style="dim")
+        t.no_wrap, t.overflow = True, "ellipsis"
         try:
             set_content(self.query_one("#sb-keys", Static), t)
         except NoMatches:
