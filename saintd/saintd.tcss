@@ -544,8 +544,8 @@ Button.-textual-compact.-error:focus, Button.-textual-compact.-error:hover { bac
 .-low #cal-panel .btn-row { display: none; }
 
 /* ---------------------------------------------------------------- the tab strip
-   All but the biggest terminals: the tabs run along one row under the title bar
-   (as in sportst and skydrop), and the pages get the tab column's width. */
+   All but the biggest terminals: the tabs run along one row under the title bar,
+   and the pages get the tab column's width. */
 .-strip #body { layout: vertical; }
 .-strip #rail {
     width: 100%;

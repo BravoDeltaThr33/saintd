@@ -18,7 +18,7 @@ from textual.app import ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Button, Input, Label, ProgressBar, RadioButton, RadioSet, RichLog, Select, Static, Switch
 
-from .. import icons, term, tts
+from .. import icons, system, term, tts
 from ..config import TRANSLATORS
 from ..net import NetError
 from ..sources import SOURCES
@@ -261,12 +261,14 @@ class SettingsPane(LazyPage, VerticalScroll):
     def scan_voices(self) -> None:
         """Which engines and voices this computer has (some take a moment to answer)."""
         report = []
-        slow = ("speechd", "festival")                   # these can take a few seconds to answer
+        # these can take a few seconds to answer
+        slow = [x for x in ("speechd", "festival", "sapi") if x in tts.ENGINE_ORDER]
 
         def count(eid: str) -> tuple[str, bool, int]:
             e = tts.ENGINES[eid]
             ok = e.available()
-            return eid, ok, (len([v for v in e.voices() if v.installed]) if ok else 0)
+            have = [v for v in e.voices() if v.installed] if ok else []
+            return eid, ok, len([v for v in have if v.id]) or len(have)     # "the system voice" is one of them
 
         for eid in tts.ENGINE_ORDER:
             if eid not in slow:
@@ -315,7 +317,7 @@ class SettingsPane(LazyPage, VerticalScroll):
         players = tts.players()
         t.append(f"  {g['ok'] if players else g['bad']} ", style="bold")
         t.append(f"{'Audio player':<18}", style="bold")
-        t.append(f" {players[0]}" if players else " none found:  sudo apt install pipewire-bin", style="")
+        t.append(f" {players[0]}" if players else f" none found:  {tts.PLAYER_INSTALL}", style="")
         e, v = tts.resolve(cfg)
         t.append("\n  Reading with  ", style="bold dim")
         t.append(f"{e.label} {g['sep']} {e.voice_label(v)}" if e else "no engine yet", style="bold")
@@ -458,7 +460,11 @@ class SettingsPane(LazyPage, VerticalScroll):
             return
         if self.app.reader.active and self.app.reader.voice == v:
             self.app.reader.stop()
-        tts.delete_piper_voice(v)
+        try:
+            tts.delete_piper_voice(v)
+        except tts.TTSError as err:
+            self.query_one("#tts-status", Static).update(f"The voice was not deleted: {err}")
+            return
         tts.forget_voices()
         self.query_one("#tts-status", Static).update(f"Deleted the voice {v}.")
         self.scan_voices()
@@ -474,7 +480,7 @@ class SettingsPane(LazyPage, VerticalScroll):
         say("Installing Piper (about 60 MB of Python packages)… this takes a minute.")
         try:
             r = subprocess.run([sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-q",
-                                "piper-tts"], capture_output=True, text=True, timeout=1200)
+                                "piper-tts"], capture_output=True, text=True, timeout=1200, **system.detached())
             ok = r.returncode == 0
             err = (r.stderr or r.stdout or "").strip().splitlines()[-1:] if not ok else []
         except Exception as e:
@@ -485,8 +491,10 @@ class SettingsPane(LazyPage, VerticalScroll):
         if ok:
             say("Piper is installed. Choose a natural voice below and press Download.")
         else:
-            say("Piper could not be installed here" + (f": {err[0][:120]}" if err else "") +
-                ". From a terminal:  pipx inject saint-directory piper-tts")
+            say("Piper could not be installed here" + (f": {err[0][:120]}" if err else "") + ". " +
+                system.pick("From a terminal:  pipx inject saint-directory piper-tts",
+                            "From a terminal:  pipx inject saint-directory piper-tts",
+                            "Run install.ps1 again: it adds Piper."))
         self.scan_voices()
 
     # ------------------------------------------------------------ helpers

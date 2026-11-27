@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saint-directory"
-version = "2.4.0"
+version = "2.5.0"
 description = "Saint Directory (saintd): a retro terminal guide to the saints of the Eastern Orthodox Church"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,6 +15,8 @@ keywords = ["orthodox", "saints", "tui", "textual", "terminal"]
 classifiers = [
     "Environment :: Console :: Curses",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
     "Topic :: Religion",
 ]

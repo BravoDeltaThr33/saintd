@@ -36,7 +36,19 @@ def _print_wait(host: str, seconds: float) -> None:
     print(f"\n  {host} asked us to slow down; waiting {int(seconds)} s", flush=True)
 
 
+def _tolerant_output() -> None:
+    """Never fail on a character the console cannot show (a Windows code page, a pipe):
+    print a replacement instead."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream is not None and (stream.encoding or "").lower().replace("-", "") != "utf8":
+                stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _tolerant_output()
     p = argparse.ArgumentParser(prog="saintd", description=f"{APP_NAME} — the saints of the Orthodox Church in your terminal.")
     p.add_argument("--version", action="version", version=f"saintd {__version__}")
     p.add_argument("--sync", action="store_true", help="build/refresh the directory from the APIs, then exit")

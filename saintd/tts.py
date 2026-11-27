@@ -4,17 +4,20 @@ reader that speaks a saint's life paragraph by paragraph.
 Engines, best first ("Automatic" takes the first one that works):
 
 * Piper — natural neural voices, offline (Python package ``piper-tts``; the
-  voices are downloaded on request into ~/.local/share/saintd/voices).
-* RHVoice — good classic voices (apt: rhvoice rhvoice-english).
-* SVOX Pico — clear, small voices (apt: libttspico-utils).
-* eSpeak NG — robotic but light (apt: espeak-ng).
-* Speech Dispatcher — the desktop's own speech service (spd-say).
-* Festival — the classic Edinburgh system (apt: festival).
+  voices are downloaded on request into the voices folder of saintd's data).
+* macOS: the system's own voices (``say``).
+* Windows: the system's own voices (SAPI, through Windows PowerShell).
+* Linux: RHVoice — good classic voices (apt: rhvoice rhvoice-english).
+* Linux: SVOX Pico — clear, small voices (apt: libttspico-utils).
+* eSpeak NG — robotic but light (apt: espeak-ng; Homebrew; the Windows installer).
+* Linux: Speech Dispatcher — the desktop's own speech service (spd-say).
+* Linux: Festival — the classic Edinburgh system (apt: festival).
 
 Every engine except Speech Dispatcher is turned into WAV audio first and then
-played with the first player that works (pw-play, paplay, aplay, ffplay, mpv,
-play). Playing from a file lets the reader pause in the middle of a sentence
-and prepare the next paragraph while the current one is heard.
+played with the first player that works (Linux: pw-play, paplay, aplay; macOS:
+afplay; Windows: Python's winsound; anywhere: ffplay, mpv, play). Playing from
+a file lets the reader pause in the middle of a sentence and prepare the next
+paragraph while the current one is heard.
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -36,7 +40,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from .config import cache_dir, data_dir
+from . import system
+from .config import TTS_ENGINES, cache_dir, data_dir
 
 
 class TTSError(Exception):
@@ -52,12 +57,27 @@ class Voice:
     size: int = 0                 # bytes to download (Piper voices not yet on this computer)
 
 
-ENGINE_ORDER = ["piper", "rhvoice", "pico", "espeak", "speechd", "festival"]
+ENGINE_ORDER = list(TTS_ENGINES)            # the engines this kind of computer can have, best first
 ENGINE_CHOICES = ["auto", *ENGINE_ORDER]
 RATES = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.35, 1.5, 1.75]
 SAMPLE = "Holy Apostle Cleopas, pray to God for us. This is how the lives of the saints will sound."
 
 _QUIET = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+
+# what to install when nothing can play the audio, or nothing can speak
+PLAYER_INSTALL = system.pick("sudo apt install pipewire-bin (or pulseaudio-utils)",
+                             "afplay comes with macOS; or brew install ffmpeg",
+                             "install ffmpeg or mpv")
+NO_ENGINE = system.pick("No speech engine was found. Install one, e.g.  sudo apt install espeak-ng  — "
+                        "or Piper for natural voices (Settings → Voice & Reading aloud).",
+                        "No speech engine was found. Install Piper for natural voices "
+                        "(Settings → Voice & Reading aloud).",
+                        "No speech engine was found. Install Piper for natural voices "
+                        "(Settings → Voice & Reading aloud).")
+# the English of a voice, from its language code
+_ENGLISH = {"en_US": "American English", "en_GB": "British English", "en_AU": "Australian English",
+            "en_IE": "Irish English", "en_IN": "Indian English", "en_ZA": "South African English",
+            "en_SC": "Scottish English", "en_NZ": "New Zealand English", "en_CA": "Canadian English"}
 
 
 def _which(*names: str) -> str | None:
@@ -68,11 +88,12 @@ def _which(*names: str) -> str | None:
     return None
 
 
-def _run(cmd: list[str], text: str | None = None, timeout: float = 120) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], text: str | None = None, timeout: float = 120,
+         env: dict | None = None) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(cmd, input=text.encode("utf-8") if text is not None else None,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
-                              start_new_session=True)
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout, env=env,
+                              **system.detached())
     except subprocess.TimeoutExpired as e:
         raise TTSError(f"{Path(cmd[0]).name} took too long") from e
     except OSError as e:
@@ -102,7 +123,7 @@ class Engine:
     id = ""
     label = ""
     blurb = ""
-    install = ""                  # how to get it on Linux Mint
+    install = ""                  # how to get it on this kind of computer
     direct = False                # speaks by itself instead of making WAV audio
     _voices: list[Voice] | None = None
 
@@ -271,8 +292,13 @@ def download_piper_voice(key: str, progress: Callable[[int, int], None] = lambda
 
 
 def delete_piper_voice(key: str) -> None:
+    if system.WINDOWS:
+        _piper_worker.close()                   # Windows cannot delete a voice that is loaded
     for suffix in (".onnx", ".onnx.json"):
-        (voices_dir() / f"{key}{suffix}").unlink(missing_ok=True)
+        try:
+            (voices_dir() / f"{key}{suffix}").unlink(missing_ok=True)
+        except OSError as e:
+            raise TTSError(f"could not delete {key}{suffix}: {e.strerror or e}") from e
 
 
 class _PiperWorker:
@@ -286,10 +312,11 @@ class _PiperWorker:
 
     def _ensure(self) -> subprocess.Popen:
         if self.proc is None or self.proc.poll() is not None:
-            env = dict(os.environ, PYTHONUNBUFFERED="1", ORT_LOGGING_LEVEL="3")
+            env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8", ORT_LOGGING_LEVEL="3")
             self.proc = subprocess.Popen([sys.executable, "-m", "saintd.piper_worker"], stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-                                         encoding="utf-8", bufsize=1, env=env, start_new_session=True)
+                                         encoding="utf-8", bufsize=1, env=env,
+                                         **system.detached(low_priority=True))
         return self.proc
 
     def request(self, req: dict) -> dict:
@@ -326,7 +353,8 @@ class PiperEngine(Engine):
     id = "piper"
     label = "Piper (natural neural voices)"
     blurb = "Natural-sounding voices that run on this computer, no internet needed once a voice is downloaded."
-    install = "pipx inject saint-directory piper-tts"
+    install = system.pick("pipx inject saint-directory piper-tts", "pipx inject saint-directory piper-tts",
+                          "press Install Piper below")
 
     def available(self) -> bool:
         return importlib.util.find_spec("piper") is not None
@@ -452,10 +480,18 @@ class EspeakEngine(Engine):
     id = "espeak"
     label = "eSpeak NG"
     blurb = "Robotic, but quick and light; many accents."
-    install = "sudo apt install espeak-ng"
+    install = system.pick("sudo apt install espeak-ng", "brew install espeak-ng",
+                          "the eSpeak NG installer (github.com/espeak-ng/espeak-ng/releases)")
 
     def _bin(self) -> str | None:
-        return _which("espeak-ng", "espeak")
+        found = _which("espeak-ng", "espeak")
+        if found or not system.WINDOWS:
+            return found
+        for var in ("ProgramFiles", "ProgramFiles(x86)"):        # its installer does not add it to PATH
+            exe = Path(os.environ.get(var) or "C:/Program Files") / "eSpeak NG" / "espeak-ng.exe"
+            if exe.is_file():
+                return str(exe)
+        return None
 
     def available(self) -> bool:
         return self._bin() is not None
@@ -581,8 +617,133 @@ class SpeechDispatcherEngine(Engine):
             pass
 
 
-ENGINES: dict[str, Engine] = {e.id: e for e in (PiperEngine(), RHVoiceEngine(), PicoEngine(), EspeakEngine(),
-                                                  SpeechDispatcherEngine(), FestivalEngine())}
+# -- macOS: say -------------------------------------------------------
+
+# the novelty voices of macOS (bells, bubbles, a whisper...) are not for reading the lives of the saints
+_SAY_NOVELTY = {"Albert", "Bad News", "Bahh", "Bells", "Boing", "Bubbles", "Cellos", "Deranged", "Fred",
+                "Good News", "Hysterical", "Jester", "Junior", "Kathy", "Organ", "Pipe Organ", "Princess",
+                "Ralph", "Superstar", "Trinoids", "Whisper", "Wobble", "Zarvox"}
+
+
+class SayEngine(Engine):
+    id = "say"
+    label = "macOS voices"
+    blurb = "The voices that come with macOS (System Settings → Accessibility → Spoken Content adds more)."
+    install = "comes with macOS"
+
+    def available(self) -> bool:
+        return system.MACOS and _which("say") is not None
+
+    def _list_voices(self) -> list[Voice]:
+        out = [Voice("", "The system voice (System Settings → Accessibility → Spoken Content)")]
+        r = _run(["say", "-v", "?"], timeout=15)
+        for line in r.stdout.decode("utf-8", "replace").splitlines():
+            # "Daniel              en_GB    # Hello! My name is Daniel."  (names may hold spaces and brackets)
+            m = re.match(r"^(.+?)\s+([a-z]{2,3}[_-][A-Za-z0-9]+)\s+#", line)
+            if not m:
+                continue
+            name, lang = m.group(1).strip(), m.group(2).replace("-", "_")
+            if not lang.startswith("en_") or name.split(" (")[0] in _SAY_NOVELTY or any(v.id == name for v in out):
+                continue
+            note = _ENGLISH.get(lang, "English")
+            shown = re.sub(r"\s*\([A-Z][a-z]+ \([^()]*\)\)$", "", name)    # "Eddy (English (UK))" -> "Eddy"
+            out.append(Voice(name, f"{shown} — {note}", note))
+        return out
+
+    def default_voice(self) -> str:
+        return ""                                 # the voice chosen in System Settings
+
+    def voice_label(self, voice_id: str) -> str:
+        return super().voice_label(voice_id) if voice_id else "the system voice"
+
+    def synth(self, text: str, voice: str, rate: float, out: Path) -> None:
+        cmd = ["say", "-o", str(out), "--data-format=LEI16@22050", "-f", "-"]
+        if voice:
+            cmd[1:1] = ["-v", voice]
+        if abs(rate - 1.0) > 0.01:
+            cmd[1:1] = ["-r", str(int(round(180 * rate)))]          # words a minute
+        r = _run(cmd, text)
+        if r.returncode != 0:
+            raise TTSError(f"say: {r.stderr.decode('utf-8', 'replace').strip()[:100] or 'failed'}")
+        _check_wav(out, "macOS speech")
+
+
+# -- Windows: SAPI ----------------------------------------------------
+
+# System.Speech is part of Windows PowerShell 5.1 (not of the newer pwsh). Values come in through the
+# environment and the text through a UTF-8 file, so no quoting can go wrong.
+_SAPI = ("$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.Speech; "
+         "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; ")
+_SAPI_LIST = _SAPI + ("foreach ($v in $s.GetInstalledVoices()) { if ($v.Enabled) { $i = $v.VoiceInfo; "
+                      "[Console]::Out.WriteLine($i.Name + '|' + $i.Culture.Name + '|' + $i.Gender) } }")
+_SAPI_SPEAK = _SAPI + ("if ($env:SAINTD_TTS_VOICE) { $s.SelectVoice($env:SAINTD_TTS_VOICE) }; "
+                       "$s.Rate = [int]$env:SAINTD_TTS_RATE; $s.SetOutputToWaveFile($env:SAINTD_TTS_OUT); "
+                       "$s.Speak([IO.File]::ReadAllText($env:SAINTD_TTS_TEXT, [Text.Encoding]::UTF8)); "
+                       "$s.Dispose()")
+
+
+def _powershell() -> str | None:
+    p = _which("powershell")
+    if p or not system.WINDOWS:
+        return p
+    exe = Path(os.environ.get("SystemRoot") or "C:/Windows") / "System32" / "WindowsPowerShell" / "v1.0" / \
+        "powershell.exe"
+    return str(exe) if exe.is_file() else None
+
+
+def _sapi_name(voice_id: str) -> str:
+    """'Microsoft Zira Desktop' -> 'Zira'"""
+    return re.sub(r"^Microsoft\s+|\s+Desktop$", "", voice_id)
+
+
+class SapiEngine(Engine):
+    id = "sapi"
+    label = "Windows voices"
+    blurb = "The voices that come with Windows, such as David and Zira."
+    install = "comes with Windows (Windows PowerShell)"
+
+    def available(self) -> bool:
+        return system.WINDOWS and _powershell() is not None
+
+    def _ps(self, script: str, timeout: float = 120, env: dict | None = None) -> subprocess.CompletedProcess:
+        return _run([_powershell() or "powershell", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script],
+                    timeout=timeout, env=env)
+
+    def _list_voices(self) -> list[Voice]:
+        out = [Voice("", "The Windows default voice")]
+        r = self._ps(_SAPI_LIST, timeout=60)
+        for line in r.stdout.decode("utf-8", "replace").splitlines():
+            parts = line.strip().split("|")
+            if len(parts) != 3 or not parts[1].lower().startswith("en") or any(v.id == parts[0] for v in out):
+                continue
+            name, culture, gender = parts
+            note = _ENGLISH.get(culture.replace("-", "_"), "English") + (
+                f", {gender.lower()}" if gender.lower() in ("male", "female") else "")
+            out.append(Voice(name, f"{_sapi_name(name)} — {note}", note))
+        return out
+
+    def default_voice(self) -> str:
+        return ""                                 # the voice chosen in Windows Settings
+
+    def voice_label(self, voice_id: str) -> str:
+        return _sapi_name(voice_id) if voice_id else "the Windows default voice"
+
+    def synth(self, text: str, voice: str, rate: float, out: Path) -> None:
+        src = out.with_suffix(".txt")
+        src.write_text(text, encoding="utf-8")
+        speed = max(-10, min(10, round(10 * math.log(max(0.1, rate)) / math.log(3))))   # 10 = three times as fast
+        env = dict(os.environ, SAINTD_TTS_TEXT=str(src), SAINTD_TTS_OUT=str(out), SAINTD_TTS_VOICE=voice or "",
+                   SAINTD_TTS_RATE=str(speed))
+        r = self._ps(_SAPI_SPEAK, env=env)
+        if r.returncode != 0:
+            err = r.stderr.decode("utf-8", "replace").strip().splitlines()
+            raise TTSError(f"Windows speech: {err[0][:100] if err else 'failed'}")
+        _check_wav(out, "Windows speech")
+
+
+ENGINES: dict[str, Engine] = {e.id: e for e in (PiperEngine(), SayEngine(), SapiEngine(), RHVoiceEngine(),
+                                                  PicoEngine(), EspeakEngine(), SpeechDispatcherEngine(),
+                                                  FestivalEngine())}
 
 
 def engine(eid: str) -> Engine | None:
@@ -607,7 +768,7 @@ def resolve(cfg) -> tuple[Engine | None, str]:
     """The engine and voice to read with: the chosen ones, or the best that works."""
     want = cfg["tts_engine"]
     voices = cfg["tts_voices"] or {}
-    order = ([want] if want in ENGINES else []) + [e for e in ENGINE_ORDER if e != want]
+    order = ([want] if want in ENGINE_ORDER else []) + [e for e in ENGINE_ORDER if e != want]
     for eid in order:
         e = ENGINES[eid]
         if not usable(e):
@@ -621,46 +782,186 @@ def resolve(cfg) -> tuple[Engine | None, str]:
 
 # ---------------------------------------------------------------- audio players
 
-_PLAYERS = [
-    ("pw-play", ["pw-play", "{f}"]),
-    ("paplay", ["paplay", "{f}"]),
-    ("aplay", ["aplay", "-q", "{f}"]),
+# Windows: Python's own winsound, in a small process of its own (stopping the process stops the sound)
+_WINSOUND = "import sys, winsound; winsound.PlaySound(sys.argv[1], winsound.SND_FILENAME | winsound.SND_NODEFAULT)"
+_ANYWHERE = [
     ("ffplay", ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", "{f}"]),
     ("mpv", ["mpv", "--no-video", "--really-quiet", "--no-terminal", "{f}"]),
     ("play", ["play", "-q", "{f}"]),
 ]
+if system.WINDOWS:
+    _PLAYERS = [("Windows audio", [sys.executable, "-I", "-c", _WINSOUND, "{f}"]), *_ANYWHERE]
+elif system.MACOS:
+    _PLAYERS = [("afplay", ["afplay", "{f}"]), *_ANYWHERE]
+else:
+    _PLAYERS = [("pw-play", ["pw-play", "{f}"]), ("paplay", ["paplay", "{f}"]), ("aplay", ["aplay", "-q", "{f}"]),
+                *_ANYWHERE]
 _player_ok: str | None = None            # the player that worked last
 _player_bad: set[str] = set()
 
 
 def players() -> list[str]:
-    return [name for name, _ in _PLAYERS if _which(name)]
+    """The audio players this computer has, best first."""
+    return [name for name, cmd in _PLAYERS if _which(cmd[0])]
+
+
+def _player_choice() -> tuple[str, list[str]] | None:
+    """(name, command with {f} for the file) of the audio player to use."""
+    env = os.environ.get("SAINTD_PLAYER")
+    if env:
+        return "SAINTD_PLAYER", env.split() + (["{f}"] if "{f}" not in env else [])
+    names = [n for n in ([_player_ok] if _player_ok else []) + players() if n and n not in _player_bad]
+    for name, cmd in _PLAYERS:
+        if names and name == names[0]:
+            return name, list(cmd)
+    return None
 
 
 def player() -> list[str] | None:
     """The command (with {f} for the file) of the audio player to use."""
-    env = os.environ.get("SAINTD_PLAYER")
-    if env:
-        return env.split() + (["{f}"] if "{f}" not in env else [])
-    names = [n for n in ([_player_ok] if _player_ok else []) + players() if n and n not in _player_bad]
-    for name, cmd in _PLAYERS:
-        if names and name == names[0]:
-            return list(cmd)
-    return None
+    choice = _player_choice()
+    return choice[1] if choice else None
 
 
-def start_player(path: Path) -> subprocess.Popen:
+def _launch(cmd: list[str], path: Path) -> subprocess.Popen:
+    return subprocess.Popen([c.replace("{f}", str(path)) for c in cmd], stdin=subprocess.DEVNULL, **_QUIET,
+                            **system.detached())
+
+
+def _cut_wav(path: Path, seconds: float, dest: Path) -> bool:
+    """Write what follows the first `seconds` of a WAV file to `dest`; False if (almost) nothing is left."""
+    try:
+        with wave.open(str(path)) as w:
+            params, rate, total = w.getparams(), w.getframerate(), w.getnframes()
+            start = int(seconds * rate)
+            if start >= total - rate // 20:
+                return False
+            w.setpos(start)
+            frames = w.readframes(total - start)
+        with wave.open(str(dest), "wb") as o:
+            o.setparams(params)
+            o.writeframes(frames)
+        return True
+    except (OSError, EOFError, wave.Error) as e:
+        raise TTSError("the audio could not be resumed") from e
+
+
+class Playback:
+    """A WAV file being played (or a direct engine speaking), which the reader can pause,
+    resume and stop. On Linux the player is frozen and thawed (SIGSTOP, SIGCONT), which
+    pauses mid-word. macOS and Windows players cannot be frozen that way: they are stopped,
+    and Resume plays the rest of the file from where it was stopped."""
+
+    FREEZE = system.LINUX and hasattr(os, "killpg") and hasattr(signal, "SIGSTOP")
+    LEAD = 0.25                     # seconds heard again on Resume, so that no syllable is lost
+
+    def __init__(self, proc: subprocess.Popen, cmd: list[str] | None = None, path: Path | None = None) -> None:
+        self.proc, self.cmd, self.path = proc, cmd, path
+        self.offset = 0.0           # where in the file the running player started
+        self.started = time.monotonic()
+        self.paused = False
+        self.killed = False         # stopped by the reader (not an error of the player)
+        self.done_code: int | None = None
+        self._part = 0
+
+    @property
+    def returncode(self) -> int | None:
+        return self.done_code if self.done_code is not None else self.proc.returncode
+
+    @property
+    def failed(self) -> bool:
+        """The player stopped with an error (not because the reader stopped it)."""
+        code = self.returncode
+        return code is not None and code != 0 and not self.killed
+
+    def poll(self) -> int | None:
+        """None while the sound plays or is paused; the exit code once it is over."""
+        if self.done_code is not None:
+            return self.done_code
+        if self.paused and not self.FREEZE:
+            return None                         # stopped for a pause: the rest is still to come
+        return self.proc.poll()
+
+    def _signal(self, sig: int) -> None:
+        try:
+            os.killpg(self.proc.pid, sig)       # the player's own session: it and anything it started
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    def _end_process(self) -> None:
+        if self.proc.poll() is not None:
+            return
+        if system.WINDOWS:
+            try:
+                self.proc.terminate()
+            except OSError:
+                pass
+            return
+        if self.FREEZE:
+            self._signal(signal.SIGCONT)        # a frozen player must be thawed to hear the signal
+        self._signal(signal.SIGTERM)
+
+    def pause(self) -> None:
+        if self.paused or self.poll() is not None:
+            return
+        self.paused = True
+        if self.FREEZE:
+            self._signal(signal.SIGSTOP)
+            return
+        self.offset = max(0.0, self.offset + time.monotonic() - self.started - self.LEAD)
+        self._end_process()
+        try:
+            self.proc.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            pass
+
+    def resume(self) -> None:
+        if not self.paused:
+            return
+        self.paused = False
+        if self.FREEZE:
+            self._signal(signal.SIGCONT)
+            return
+        if self.done_code is not None:
+            return
+        if self.cmd is None or self.path is None:
+            self.done_code = 0                  # nothing to start again: count the piece as heard
+            return
+        self._part += 1
+        rest = self.path.with_name(f"{self.path.stem}-rest{self._part}.wav")
+        try:
+            if not _cut_wav(self.path, self.offset, rest):
+                self.done_code = 0              # it was paused at the very end
+                return
+            self.proc, self.started = _launch(self.cmd, rest), time.monotonic()
+        except (OSError, TTSError):
+            self.done_code = 1                  # reported as an error of the player
+
+    def stop(self) -> None:
+        """Stop for good (the reader is stopped or moves elsewhere)."""
+        self.killed = True
+        self.paused = False
+        self._end_process()
+        if self.done_code is None and self.proc.poll() is None:
+            try:
+                self.proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                pass
+        if self.done_code is None:
+            self.done_code = self.proc.returncode if self.proc.returncode is not None else -1
+
+
+def start_player(path: Path) -> Playback:
     """Start playing a WAV file; a player that fails at once is skipped for the next one."""
     global _player_ok
     tried = 0
     while True:
-        cmd = player()
-        if cmd is None:
-            raise TTSError("no audio player found (sudo apt install pipewire-bin or pulseaudio-utils)")
-        name = Path(cmd[0]).name
+        choice = _player_choice()
+        if choice is None:
+            raise TTSError(f"no audio player found ({PLAYER_INSTALL})")
+        name, cmd = choice
         try:
-            p = subprocess.Popen([c.replace("{f}", str(path)) for c in cmd], start_new_session=True,
-                                 stdin=subprocess.DEVNULL, **_QUIET)
+            p = _launch(cmd, path)
         except OSError:
             _player_bad.add(name)
             tried += 1
@@ -668,19 +969,21 @@ def start_player(path: Path) -> subprocess.Popen:
                 raise TTSError("no audio player works on this computer")
             continue
         if os.environ.get("SAINTD_PLAYER"):
-            return p
+            return Playback(p, cmd, path)
         try:
             code = p.wait(timeout=0.25)                  # a player without a sound server gives up at once
         except subprocess.TimeoutExpired:
             _player_ok = name
-            return p
+            return Playback(p, cmd, path)
         if code == 0 and wav_seconds(path) < 0.3:
             _player_ok = name
-            return p
+            return Playback(p, cmd, path)
         _player_bad.add(name)
         tried += 1
         if tried > len(_PLAYERS):
-            raise TTSError("no audio player works on this computer (is the sound server running?)")
+            raise TTSError("no audio player works on this computer (" +
+                           system.pick("is the sound server running?", "is a sound output chosen?",
+                                       "is a sound device connected?") + ")")
 
 
 # ---------------------------------------------------------------- making text speakable
@@ -830,8 +1133,7 @@ class Reader:
         self._sess: _Session | None = None
         self._ids = 0
         self._lock = threading.RLock()
-        self._proc: subprocess.Popen | None = None
-        self._proc_stopped = False
+        self._proc: Playback | None = None
 
     # -- what the app asks for
     @property
@@ -865,8 +1167,7 @@ class Reader:
             engine, v = resolve(self.cfg)
             voice = voice or v
         if engine is None:
-            self.error = ("No speech engine was found. Install one, e.g.  sudo apt install espeak-ng  — "
-                          "or Piper for natural voices (Settings → Voice & Reading aloud).")
+            self.error = NO_ENGINE
             self.emit("error")
             return False
         with self._lock:
@@ -974,26 +1275,15 @@ class Reader:
             if self._sess.paused:                    # spd-say cannot pause: stop, and say the piece again later
                 self._kill_proc(self._sess)
             return
-        try:
-            if self._sess.paused and not self._proc_stopped:
-                os.killpg(p.pid, signal.SIGSTOP)
-                self._proc_stopped = True
-            elif not self._sess.paused and self._proc_stopped:
-                os.killpg(p.pid, signal.SIGCONT)
-                self._proc_stopped = False
-        except (ProcessLookupError, PermissionError):
-            pass
+        if self._sess.paused:
+            p.pause()
+        else:
+            p.resume()
 
     def _kill_proc(self, sess: _Session) -> None:
         p = self._proc
-        if p is not None and p.poll() is None:
-            try:
-                if self._proc_stopped:
-                    os.killpg(p.pid, signal.SIGCONT)
-                os.killpg(p.pid, signal.SIGTERM)
-            except (ProcessLookupError, PermissionError):
-                pass
-        self._proc_stopped = False
+        if p is not None:
+            p.stop()
         if sess.engine.direct:
             sess.engine.cancel()
 
@@ -1040,7 +1330,7 @@ class Reader:
                 if sess.engine.direct:
                     if not self._wait_while_paused(sess):
                         continue                              # stopped, or told to go elsewhere
-                    proc = sess.engine.say(sess.chunks[i].text, sess.voice, rate)
+                    proc = Playback(sess.engine.say(sess.chunks[i].text, sess.voice, rate))
                 else:
                     fut = ahead.pop((i, rate), None) or pool.submit(self._synth, sess, i, rate)
                     while not fut.done() and not sess.stop.is_set() and sess.jump is None:
@@ -1054,7 +1344,7 @@ class Reader:
                     if i + 1 < len(sess.chunks) and (i + 1, rate) not in ahead:
                         ahead[(i + 1, rate)] = pool.submit(self._synth, sess, i + 1, rate)
                 with self._lock:
-                    self._proc, self._proc_stopped = proc, False
+                    self._proc = proc
                     if sess.stop.is_set():
                         self._kill_proc(sess)
                         break
@@ -1071,8 +1361,7 @@ class Reader:
                     continue
                 if sess.engine.direct and sess.paused:
                     continue                                  # interrupted by Pause: say it again on Resume
-                if not sess.engine.direct and proc.returncode not in (0, -signal.SIGTERM) \
-                        and not os.environ.get("SAINTD_PLAYER"):
+                if not sess.engine.direct and proc.failed and not os.environ.get("SAINTD_PLAYER"):
                     raise TTSError("the audio player stopped with an error")
                 for k in [k for k in ahead if k[0] <= i]:
                     ahead.pop(k, None)
@@ -1103,6 +1392,6 @@ class Reader:
                 self.emit("done" if finished else "state")
 
 
-__all__ = ["Chunk", "ENGINES", "ENGINE_CHOICES", "Engine", "Reader", "RATES", "SAMPLE", "TTSError", "Voice",
-           "chunks_of", "delete_piper_voice", "download_piper_voice", "engine", "forget_voices", "piper_catalog",
-           "player", "players", "resolve", "speakable", "usable", "voices_dir"]
+__all__ = ["Chunk", "ENGINES", "ENGINE_CHOICES", "Engine", "NO_ENGINE", "PLAYER_INSTALL", "Playback", "Reader",
+           "RATES", "SAMPLE", "TTSError", "Voice", "chunks_of", "delete_piper_voice", "download_piper_voice", "engine",
+           "forget_voices", "piper_catalog", "player", "players", "resolve", "speakable", "usable", "voices_dir"]

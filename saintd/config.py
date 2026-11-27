@@ -1,4 +1,5 @@
-"""User settings, stored as JSON under ~/.config/saintd/."""
+"""User settings, stored as JSON under ~/.config/saintd/ (on Windows, in
+%APPDATA%\\saintd)."""
 
 from __future__ import annotations
 
@@ -8,8 +9,15 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from .system import MACOS, WINDOWS
+
 
 def _xdg(var: str, fallback: str) -> Path:
+    return Path(os.environ.get(var) or Path.home() / fallback)
+
+
+def _windows(var: str, fallback: str) -> Path:
+    """%APPDATA% (settings, which travel with a roaming profile) or %LOCALAPPDATA% (the rest)."""
     return Path(os.environ.get(var) or Path.home() / fallback)
 
 
@@ -20,14 +28,24 @@ def home_override() -> Path | None:
 
 def config_dir() -> Path:
     o = home_override()
-    p = (o / "config") if o else _xdg("XDG_CONFIG_HOME", ".config") / "saintd"
+    if o:
+        p = o / "config"
+    elif WINDOWS:
+        p = _windows("APPDATA", "AppData/Roaming") / "saintd"
+    else:
+        p = _xdg("XDG_CONFIG_HOME", ".config") / "saintd"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
 
 def data_dir() -> Path:
     o = home_override()
-    p = (o / "data") if o else _xdg("XDG_DATA_HOME", ".local/share") / "saintd"
+    if o:
+        p = o / "data"
+    elif WINDOWS:
+        p = _windows("LOCALAPPDATA", "AppData/Local") / "saintd"
+    else:
+        p = _xdg("XDG_DATA_HOME", ".local/share") / "saintd"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -35,9 +53,23 @@ def data_dir() -> Path:
 def cache_dir() -> Path:
     """Downloaded icons (safe to delete; they are fetched again when needed)."""
     o = home_override()
-    p = (o / "cache") if o else _xdg("XDG_CACHE_HOME", ".cache") / "saintd"
+    if o:
+        p = o / "cache"
+    elif WINDOWS:
+        p = _windows("LOCALAPPDATA", "AppData/Local") / "saintd" / "Cache"
+    else:
+        p = _xdg("XDG_CACHE_HOME", ".cache") / "saintd"
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+# the speech engines this kind of computer can have, best first ("Automatic" tries them in this order)
+if WINDOWS:
+    TTS_ENGINES = ["piper", "sapi", "espeak"]
+elif MACOS:
+    TTS_ENGINES = ["piper", "say", "espeak"]
+else:
+    TTS_ENGINES = ["piper", "rhvoice", "pico", "espeak", "speechd", "festival"]
 
 
 DEFAULTS: dict[str, Any] = {
@@ -69,7 +101,7 @@ DEFAULTS: dict[str, Any] = {
     "asked_contact": False,         # first-run question already shown
     "article_max_age_days": 30,
     # reading aloud
-    "tts_engine": "auto",           # auto | piper | rhvoice | pico | espeak | speechd | festival
+    "tts_engine": "auto",           # auto, or one of TTS_ENGINES (piper, sapi, say, rhvoice, pico, espeak, ...)
     "tts_voices": {},               # engine -> chosen voice
     "tts_rate": 1.0,                # speed, 1.0 = normal
     "tts_follow": True,             # highlight the paragraph being read and keep it in view
@@ -81,7 +113,7 @@ DEFAULTS: dict[str, Any] = {
 TRANSLATORS = ["mymemory", "lingva", "libretranslate", "ollama", "off"]
 _CHOICES = {"translator": TRANSLATORS, "calendar": ["new", "old"], "glyphs": ["unicode", "ascii"],
             "graphics": ["auto", "kitty", "sixel", "blocks", "off"],
-            "tts_engine": ["auto", "piper", "rhvoice", "pico", "espeak", "speechd", "festival"]}
+            "tts_engine": ["auto", *TTS_ENGINES]}
 
 
 class Config:
