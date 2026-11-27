@@ -646,7 +646,8 @@ class SayEngine(Engine):
             if not lang.startswith("en_") or name.split(" (")[0] in _SAY_NOVELTY or any(v.id == name for v in out):
                 continue
             note = _ENGLISH.get(lang, "English")
-            out.append(Voice(name, f"{name} — {note}", note))
+            shown = re.sub(r"\s*\([A-Z][a-z]+ \([^()]*\)\)$", "", name)    # "Eddy (English (UK))" -> "Eddy"
+            out.append(Voice(name, f"{shown} — {note}", note))
         return out
 
     def default_voice(self) -> str:
