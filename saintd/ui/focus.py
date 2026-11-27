@@ -176,7 +176,8 @@ class FocusPane(LazyPage, Vertical):
 
     def _want_split(self) -> bool:
         try:
-            return self.app.w_screen.has_class("-wide")
+            scr = self.app.w_screen        # the article and the side column, side by side
+            return scr.has_class("-wide") or (scr.has_class("-strip") and scr.has_class("-medium"))
         except Exception:
             return False
 
@@ -313,7 +314,7 @@ class FocusPane(LazyPage, Vertical):
         card = self.query_one("#hero-card", Static)
         width = card.content_size.width or 80
         facts = self.facts(s)
-        two = width >= 96 and len(facts) > 3
+        two = width >= 72 and len(facts) > 3        # facts in two columns wherever they fit
         grid = Table.grid(padding=(0, 2, 0, 0), expand=True)
         for _ in range(2 if two else 1):
             grid.add_column(no_wrap=True, style="bold dim", min_width=12)

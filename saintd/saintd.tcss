@@ -201,23 +201,24 @@ RichLog {
     margin-bottom: 0;
 }
 #home-sync { width: 100%; height: 1; color: $accent; text-align: center; }
-#home-main { height: auto; padding-top: 1; }
+#home-main { height: auto; padding-top: 0; }
 #cal-panel, #day-panel, #spot-panel { margin-top: 0; }
 #home-left { width: 34; height: auto; margin-right: 1; }
 #cal-panel { width: 100%; height: auto; }
-#cal { margin-top: 1; }
+#cal { margin-top: 0; }
 #cal-legend { height: 3; margin-top: 1; }
+.-fill #cal-legend { margin-top: 0; }
 #day-info { height: 10; margin-top: 1; color: $foreground 90%; }
 #ahead-panel { height: auto; }
-#ahead { height: 16; margin-top: 1; }
+#ahead { height: 16; margin-top: 0; }
 #day-panel { width: 1fr; height: auto; margin-right: 1; }
-#day-head { height: 1; margin-top: 1; color: $secondary; }
-#day-cols { height: 1; margin-top: 1; color: $muted; }
+#day-head { height: 1; margin-top: 0; color: $secondary; }
+#day-cols { height: 1; margin-top: 0; color: $muted; }
 #day-list { height: 26; max-height: 100%; }
 #home-right { width: 50; height: auto; }
 .-xwide #home-right { width: 62; }
 #spot-panel { height: auto; }
-#spot-top { height: auto; margin-top: 1; }
+#spot-top { height: auto; margin-top: 0; }
 #spot-icon { width: 20; height: 10; margin-right: 1; }
 .-xwide #spot-icon { width: 24; height: 12; }
 #spot-name { width: 1fr; }
@@ -225,13 +226,16 @@ RichLog {
 #spot-hymn { height: auto; max-height: 10; margin-top: 1; color: $secondary; }
 #spot-buttons { margin-bottom: 0; }
 #gospel-panel { height: 16; padding: 0 1; }
-#gospel { height: auto; margin: 1 0; color: $foreground 90%; }
+#gospel { height: auto; margin: 0; color: $foreground 90%; }
 #home-keys { width: 100%; margin: 1 0; height: auto; }
 .panel.-reading { border-subtitle-color: $accent; border-subtitle-style: bold; }
 /* big terminals: a dashboard that fills the window */
-.-fill #banner, .-fill #tagline { display: none; }
-.-fill.-xtall #banner, .-fill.-xtall #tagline { display: block; }
+#banner, #tagline { display: none; }
+.-xtall #banner, .-xtall #tagline { display: block; }
 .-fill #home-keys { margin: 0; }
+.-fill #home-keys, .-strip #home-keys { display: none; }   /* the status bar shows the keys */
+.-fill #ahead-panel, .-fill #gospel-panel { margin-top: 0; }
+.-fill .btn-row { margin-top: 0; }
 .-xwide #home-keys { display: none; }          /* the status bar shows the keys */
 .-fill #home-main { height: 1fr; }
 .-fill #home-left { height: 100%; }
@@ -243,13 +247,16 @@ RichLog {
 .-fill #spot-panel { height: 3fr; }
 .-fill #spot-text { height: 1fr; min-height: 3; }
 .-fill #gospel-panel { height: 2fr; min-height: 7; }
+/* a three-column dashboard from 120 columns: a narrower saint of the day */
+.-fill.-medium #home-right, .-fill.-narrow #home-right { width: 44; }
+.-fill.-medium #spot-icon, .-fill.-narrow #spot-icon { width: 16; height: 8; }
 /* medium terminals: the saint of the day and the readings go under the calendar and list */
-.-medium #home-main, .-narrow #home-main { layout: grid; grid-size: 2; grid-columns: 34 1fr; grid-rows: auto auto; }
-.-medium #home-right, .-narrow #home-right { column-span: 2; width: 100%; layout: horizontal; }
-.-medium #spot-panel, .-narrow #spot-panel { width: 1fr; margin-right: 1; margin-top: 1; }
-.-medium #gospel-panel, .-narrow #gospel-panel { width: 1fr; height: 100%; min-height: 12; }
-.-medium #day-panel, .-narrow #day-panel { margin-right: 0; height: 100%; }
-.-medium #day-list, .-narrow #day-list { height: 1fr; min-height: 14; }
+.-pile #home-main { layout: grid; grid-size: 2; grid-columns: 34 1fr; grid-rows: auto auto; }
+.-pile #home-right { column-span: 2; width: 100%; layout: horizontal; }
+.-pile #spot-panel { width: 1fr; margin-right: 1; margin-top: 1; }
+.-pile #gospel-panel { width: 1fr; height: 100%; min-height: 12; }
+.-pile #day-panel { margin-right: 0; height: 100%; }
+.-pile #day-list { height: 1fr; min-height: 14; }
 /* narrow terminals: everything in one column */
 .-stack #home-main { layout: vertical; }
 .-stack #home-left, .-stack #day-panel, .-stack #home-right { width: 100%; margin-right: 0; }
@@ -261,7 +268,7 @@ RichLog {
 .-short #banner, .-short #tagline { display: none; }
 .-short #home-keys { display: none; }
 .-short #spot-icon { height: 8; width: 14; }
-.-short #day-list { height: 14; }
+.-stack.-short #day-list { height: 14; }
 .-short #cal-legend { display: none; }
 .-short #ahead { height: 9; }
 
@@ -535,3 +542,47 @@ Button.-textual-compact.-error:focus, Button.-textual-compact.-error:hover { bac
 .-low #rail-info { display: none; }
 .-low #cal { margin-top: 0; }
 .-low #cal-panel .btn-row { display: none; }
+
+/* ---------------------------------------------------------------- the tab strip
+   All but the biggest terminals: the tabs run along one row under the title bar
+   (as in sportst and skydrop), and the pages get the tab column's width. */
+.-strip #body { layout: vertical; }
+.-strip #rail {
+    width: 100%;
+    height: 1;
+    layout: horizontal;
+    padding: 0 1;
+    border-right: none;
+    background: $rail-bg;
+}
+.-strip #rail:focus { border-right: none; }
+.-strip #rail-head, .-strip #rail-emblem, .-strip #rail-spacer, .-strip #rail-info { display: none; }
+.-strip .rail-tab, .-compact.-strip .rail-tab {
+    width: auto;
+    height: 1;
+    border: none;
+    padding: 0 2;
+    margin-right: 1;
+    content-align: left middle;
+}
+.-strip .rail-tab.-active { border: none; background: $primary 30%; }
+.-strip #rail:focus .rail-tab.-active { border: none; background: $primary; color: $background; }
+.-strip #pages { height: 1fr; }
+
+/* Search in the strip: a one-row search box, the filters packed under it, and the
+   preview beside the results from 120 columns */
+.-strip #query-panel { padding-bottom: 0; }
+.-strip #q-row { margin-top: 0; }
+.-strip #q-row Button { margin-top: 0; }
+.-strip #filters { grid-gutter: 0 2; }
+.-strip #result-count { margin-top: 0; }
+.-strip.-medium #preview { display: block; width: 46; }
+.-strip.-medium #pv-icon { width: 14; height: 7; }
+.-strip #pv-top { margin-top: 0; }
+
+/* Focus in the strip: the buttons right under the tabs, a shorter header */
+.-strip #focus-bar { margin-top: 0; }
+.-strip #hero-card { padding: 0; }
+.-strip #focus-hero { margin-top: 0; }
+.-strip #hero-icon { width: 20; height: 10; }
+.-strip.-short #hero-icon { width: 14; height: 8; }

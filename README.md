@@ -178,6 +178,10 @@ The **tab column** on the left has the cursor when saintd starts: **Tab / Shift+
 **Enter** (or →) steps into the page; **Esc** brings you back to it. **F1–F4** open a tab from anywhere. The page's
 own keys (T, N, [ ], …) also work while the cursor is on the tab column.
 
+Below 180 columns or 44 rows the tabs run along one row under the title bar instead (as in sportst and skydrop),
+so the pages get the column's width: there **← →** move between tabs and **↓** steps into the page, and the status
+bar shows the open page's keys.
+
 | Tab | What it shows |
 |---|---|
 | **Home** | The Church calendar: a month with the typikon sign of every day (⊕ great feast, ✠ vigil, ✚ polyeleos, ≈ doxology, ∽ six stichera, • fast day) and the Old Calendar date; the day's feasts, tone, fast, season, vestment colour and Scripture readings; the week ahead and the next feasts and fasts (Pascha is worked out on your computer); the saints commemorated that day (century, place, ✦ life, ♪ hymns); a Saint of the Day with an icon, facts, the Life and the troparion; and the Gospel and Epistle in full. On big terminals it is a three-column dashboard. |
@@ -257,8 +261,8 @@ above work.
 | **Liturgical Colours** | changes with the Church year like the vestments (after Russian use; customs differ): gold, blue, purple, green, white, red or black; Home shows the day's colour |
 
 Themes use 24-bit colour, which most terminals support. If your font lacks symbols such as ☦ or ⚙, choose
-**Plain ASCII** symbols in Settings. The layout adapts from 80×24 up; on small terminals the tab column shows icons
-only.
+**Plain ASCII** symbols in Settings. The layout adapts from 80×24 up: the tabs move to a strip along the top below 180×44, and from
+120×30 Home is a three-column dashboard that fits the window without scrolling.
 
 ---
 

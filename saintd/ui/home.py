@@ -194,7 +194,7 @@ class HomePane(VerticalScroll):
     def _row(self, cells: list, width: int, cols: dict[str, int], header: bool = False) -> Table:
         t = Table.grid(expand=True, padding=(0, 1, 0, 0))
         t.add_column(width=2, no_wrap=True)
-        t.add_column(ratio=1, overflow="fold")
+        t.add_column(ratio=1, no_wrap=True, overflow="ellipsis")      # one row a saint
         if cols["cent"]:
             t.add_column(width=cols["cent"] - 1, no_wrap=True, overflow="ellipsis")
         if cols["place"]:

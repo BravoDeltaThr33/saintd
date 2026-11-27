@@ -22,6 +22,11 @@ from .widgets import FitText
 PAGE = 200
 
 
+def _fit(text: str, width: int) -> str:
+    """`text` cut to `width` cells with "…" at the end (as it is when width is 0)."""
+    return text if width <= 0 or len(text) <= width else text[:max(0, width - 1)] + "…"
+
+
 class ResultsTable(DataTable):
     """The results; fits its columns again whenever its own width changes
     (the preview column comes and goes with the terminal's width)."""
@@ -197,6 +202,7 @@ class SearchPane(LazyPage, Vertical):
         self._narrow = cols is self.NARROW_COLUMNS
         self._col_keys = [k for _, k, _ in cols]
         name_w = max(16, room - sum(w + pad for _, _, w in cols) - pad)
+        self._widths = {"name": name_w, **{k: w for _, k, w in cols}}
         t.clear(columns=True)
         t.add_column("Name", key="name", width=name_w)
         for label, key, w in cols:
@@ -217,7 +223,8 @@ class SearchPane(LazyPage, Vertical):
 
     def _fit_query(self) -> None:
         q = self.query_one("#q", Input)
-        short = self.app.size.height < 34
+        # a one-row search box wherever the tabs are a strip (or the terminal is short)
+        short = self.app.size.height < 34 or self.app.w_screen.has_class("-strip")
         if q.compact != short:
             q.compact = short
 
@@ -228,13 +235,18 @@ class SearchPane(LazyPage, Vertical):
         for r in rows:
             cats = [c for c in r["categories"].split("|") if c]
             kind = ", ".join(cats[:2]) if cats else r["kind"].title()
-            name = Text(r["name"])
+            widths = getattr(self, "_widths", {})
+            marks = Text()
             if r["id"] in favs:
-                name.append(f" {g['saved']}", style="bold")
+                marks.append(f" {g['saved']}", style="bold")
             if r.get("has_life"):
-                name.append(f" {g['life']}", style="dim")
+                marks.append(f" {g['life']}", style="dim")
+            # one row a saint: a long name ends in "…" and keeps its marks
+            name = Text(_fit(r["name"], widths.get("name", 0) - len(marks.plain)))
+            name.append_text(marks)
             cells = {"feast": fmt_feast(r.get("first_feast")), "century": short_century(r["century"]),
-                     "gender": r["gender"], "country": r["country"], "kind": kind}
+                     "gender": r["gender"], "country": _fit(r["country"], widths.get("country", 0)),
+                     "kind": _fit(kind, widths.get("kind", 0))}
             t.add_row(name, *[cells[k] for k in getattr(self, "_col_keys", ["feast", "century", "country"])],
                       key=str(r["id"]))
             self._ids.append(r["id"])
