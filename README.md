@@ -80,7 +80,8 @@ run `./install.sh`.
 
 `install.sh` installs with pipx when present (otherwise into a private virtual environment in
 `~/.local/share/saintd-venv`, linked into `~/.local/bin`) and adds **Piper** for natural reading voices
-(`pipx inject saint-directory piper-tts`). Without Piper, reading aloud uses the voices your system has.
+(`pipx inject saint-directory piper-tts`). Without Piper, reading aloud uses the voices your system has. If you add
+pipx later, the next `./install.sh` installs with pipx and removes that private environment.
 
 ### Upgrading
 
