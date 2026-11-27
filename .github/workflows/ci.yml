@@ -89,6 +89,10 @@ jobs:
           "$SAINTD_EXE" --terminal
           SAINTD_HOME="$RUNNER_TEMP/saintd-cli" "$SAINTD_EXE" --stats
 
+      - name: eSpeak NG and aplay for the Linux check
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends espeak-ng alsa-utils
+
       - name: Voices, players, Piper and the interface
         run: |
           cat > "$RUNNER_TEMP/smoke.py" <<'EOF'
@@ -127,6 +131,8 @@ jobs:
               assert tts.ENGINE_ORDER == ["piper", "rhvoice", "pico", "espeak", "speechd", "festival"]
 
           own = {"darwin": "say", "win32": "sapi"}.get(sys.platform)
+          if system.LINUX and tts.ENGINES["espeak"].available():
+              own = "espeak"                                                       # the Linux check installs eSpeak NG
           if own:
               e = tts.ENGINES[own]
               assert e.available(), f"{own} is missing"
@@ -211,8 +217,10 @@ jobs:
           # ------------------------------------------------------------------ the terminal report
           info = term.detect(probe_terminal=False)
           print(term.report(info))
-          if system.WINDOWS and not os.environ.get("WT_SESSION"):
-              assert info.family == "conhost" and info.truecolor and info.best_graphics() == "blocks", info
+          if system.WINDOWS:                    # a console window (cmd, PowerShell) and Windows Terminal
+              con = term.from_environment({})
+              assert con.family == "conhost" and con.truecolor and con.best_graphics() == "blocks", con
+              assert term.from_environment({"WT_SESSION": "1"}).family == "windows terminal"
 
           # ------------------------------------------------------------------ the interface, without a terminal
           # no network from here on: every request fails at once, which the app must take calmly
