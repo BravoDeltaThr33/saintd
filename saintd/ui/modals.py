@@ -10,7 +10,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, MarkdownViewer, Static
 
-from .. import system
+from .. import system, term
 from .common import MONTHS, WEEKDAYS, glyphs, keys
 
 HELP = """\
@@ -100,8 +100,7 @@ the saints who share them and the sources stand in a column beside the life.
 
 The paragraph being read is highlighted and kept in view; the bar above the status line shows
 what is read, how far, the voice and the speed, with buttons for the mouse. Choose the engine, the
-voice and the speed in **Settings → Voice & Reading aloud**: Piper's natural voices (downloaded once,
-then offline), {engines}.
+voice and the speed in **Settings → Voice & Reading aloud**: {engines}.
 
 ## Words you will meet
 
@@ -129,12 +128,39 @@ then offline), {engines}.
 """
 
 
+WINDOW_HELP = """\
+## This window
+
+saintd draws this window itself (saintd.exe, or `saintd --window`): the screens and keys are the
+ones of the terminal, and the window adds these.
+
+| Key | What it does |
+|---|---|
+| **Ctrl+=**  **Ctrl+-** (or **Ctrl** and the wheel) | Larger / smaller text |
+| **Ctrl+0** | The usual text size |
+| **F11** | Full screen (again: back to the window) |
+| **Ctrl+V** or **Shift+Insert** | Paste (into the search box and the other fields) |
+
+Closing the window quits saintd, as **Ctrl+Q** does. Its size, place and text size are kept for next time.
+
+"""
+
+
 def help_text(g: dict) -> str:
-    """The help, drawn with the symbols in use (Unicode or Plain ASCII)."""
+    """The help, drawn with the symbols in use (Unicode or Plain ASCII), with the window's
+    own keys when saintd runs in its window."""
     keys_ = ("arrows", "updown", "right", "saved", "prev", "next", "rank6", "rank5", "rank4", "rank3", "rank2", "fast")
-    engines = system.pick("RHVoice, SVOX Pico, eSpeak NG, Speech Dispatcher or Festival",
-                          "the voices of macOS or eSpeak NG", "the voices of Windows or eSpeak NG")
-    return HELP.format(engines=engines, **{k: g[k] for k in keys_})
+    if system.PROGRAM:                      # saintd.exe: Piper cannot be added to it
+        engines = ("the voices of Windows or eSpeak NG (Piper's natural voices need saintd installed with "
+                   "install.ps1)")
+    else:
+        engines = "Piper's natural voices (downloaded once,\nthen offline), " + system.pick(
+            "RHVoice, SVOX Pico, eSpeak NG, Speech Dispatcher or Festival", "the voices of macOS or eSpeak NG",
+            "the voices of Windows or eSpeak NG")
+    text = HELP.format(engines=engines, **{k: g[k] for k in keys_})
+    if term.in_window():
+        text = text.replace("## Words you will meet", WINDOW_HELP + "## Words you will meet", 1)
+    return text
 
 
 class HelpScreen(ModalScreen):

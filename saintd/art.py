@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,7 +31,9 @@ MAT = (70, 20, 18)                      # the dark red cloth behind an icon, sho
 CINNABAR = (150, 32, 22)
 
 _WINFONTS = Path(os.environ.get("SystemRoot") or "C:/Windows") / "Fonts"
+_OWN = Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) / "fonts"   # saintd.exe brings fonts of its own
 FONTS = [
+    str(_OWN / "DejaVuSerif-Bold.ttf"),             # saintd.exe: the same letters as on Linux
     # Linux
     "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
@@ -46,6 +49,15 @@ FONTS = [
     str(_WINFONTS / "georgiab.ttf"),
     str(_WINFONTS / "timesbd.ttf"),
 ]
+# for a sign the fonts above may lack: the Orthodox cross (☦) on the blank of a saint with no initial
+SYMBOL_FONTS = [
+    str(_OWN / "DejaVuSans-Bold.ttf"),
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/System/Library/Fonts/Apple Symbols.ttf",
+    str(_WINFONTS / "seguisym.ttf"),
+]
 
 
 def available() -> bool:
@@ -53,17 +65,26 @@ def available() -> bool:
 
 
 @lru_cache(maxsize=16)
-def font(size: int):
-    for p in FONTS:
-        if Path(p).exists():
-            try:
-                return ImageFont.truetype(p, size)
-            except Exception:
-                continue
+def font(size: int, char: str = ""):
+    """The bold serif of the icons' letters; given a character, a font that has it."""
+    paths = [p for p in FONTS if Path(p).exists()]
+    if char:
+        paths = [p for p in paths + SYMBOL_FONTS if Path(p).exists() and _has(p, char)] + paths
+    for p in paths:
+        try:
+            return ImageFont.truetype(p, size)
+        except Exception:
+            continue
     try:
         return ImageFont.load_default(size=size)
     except Exception:                   # very old Pillow: a small bitmap font
         return ImageFont.load_default()
+
+
+@lru_cache(maxsize=32)
+def _has(path: str, char: str) -> bool:
+    from .window.fonts import read_coverage
+    return ord(char[0]) in read_coverage(Path(path))
 
 
 def _rgb(c) -> tuple[int, int, int]:
@@ -244,7 +265,7 @@ def icon_blank(initial: str, w: int, h: int, bg, label: str = ""):
     if r > 4 * k:
         d.ellipse([cx - r + 3 * k, cy - r + 3 * k, cx + r - 3 * k, cy + r - 3 * k], outline=CINNABAR, width=max(1, k))
     letter = (initial or "☦")[:1].upper()
-    f = font(max(8, int(r * 1.15)))
+    f = font(max(8, int(r * 1.15)), letter)
     try:
         d.text((cx, cy + r * 0.04), letter, font=f, fill=CINNABAR, anchor="mm")
     except Exception:

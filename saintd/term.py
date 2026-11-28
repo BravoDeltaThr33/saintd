@@ -37,8 +37,9 @@ MODE_LABELS = {
 }
 
 # terminals whose Kitty graphics support includes the Unicode placeholders saintd
-# uses, and the first version that has them (kitty 0.28, Ghostty 1.0)
-_KITTY_PLACEHOLDERS = {"kitty": (0, 28), "ghostty": (1, 0)}
+# uses, and the first version that has them (kitty 0.28, Ghostty 1.0; "saintd" is
+# saintd's own window, which draws pictures the same way)
+_KITTY_PLACEHOLDERS = {"kitty": (0, 28), "ghostty": (1, 0), "saintd": ()}
 # Konsole draws Sixel from 22.04 on
 _SIXEL_SINCE = {"konsole": (22, 4)}
 
@@ -464,15 +465,27 @@ def current() -> TermInfo:
     return _INFO if _INFO is not None else detect(probe_terminal=False)
 
 
+def use_window(cell_px: tuple[int, int]) -> TermInfo:
+    """saintd's own window (saintd.exe, saintd --window): 24-bit colour and pictures
+    drawn the way Kitty draws them, with cells of this many pixels. Nothing to ask."""
+    global _INFO
+    _INFO = TermInfo(name="saintd window", family="saintd", truecolor=True, colors=1 << 24, kitty_graphics=True,
+                     cell_px=cell_px, probed=True)
+    return _INFO
+
+
+def in_window() -> bool:
+    return _INFO is not None and _INFO.family == "saintd"
+
+
 def effective_mode(setting: str, info: TermInfo | None = None) -> str:
     """The graphics mode to use for a Settings choice ('auto' or a mode)."""
     info = info or current()
     forced = os.environ.get("SAINTD_GRAPHICS", "").lower()
-    if forced in GRAPHICS_MODES:
-        return forced
-    if setting in GRAPHICS_MODES:
-        return setting
-    return info.best_graphics()
+    mode = forced if forced in GRAPHICS_MODES else setting if setting in GRAPHICS_MODES else info.best_graphics()
+    if mode == "sixel" and info.family == "saintd":
+        return "kitty"                  # saintd's window draws its true images the Kitty way only
+    return mode
 
 
 def report(info: TermInfo) -> str:

@@ -26,6 +26,10 @@ from ..themes import LITURGICAL_VARIANTS, THEMES, liturgical_colour
 from ..translate import BACKEND_INFO, TranslationError
 from .common import LazyPage, glyphs, set_content
 
+# saintd.exe holds Python and saintd in one file, so Piper (a Python package) cannot be added to it
+PROGRAM_VOICES = ("saintd.exe reads aloud with the voices that come with Windows. For Piper's natural voices, "
+                  "install saintd with install.ps1 (see the README).")
+
 SOURCE_SWITCHES = (
     ("include_greek", "Include Greek-tradition commemorations (orthocal)"),
     ("use_azbyka", "Include the Russian calendar (Azbuka Very), translated to English"),
@@ -106,12 +110,14 @@ class SettingsPane(LazyPage, VerticalScroll):
         disp = Vertical(id="set-display", classes="panel")
         modes = [(f"Automatic — {term.MODE_LABELS[info.best_graphics()]}", "auto")]
         for m in term.GRAPHICS_MODES:
+            if m == "sixel" and term.in_window():
+                continue                        # saintd's own window draws true images the Kitty way only
             label = term.MODE_LABELS[m]
             if m != "off" and not info.supports(m):
                 label += " (not detected)"
             modes.append((label, m))
         disp.compose_add_child(_row(Label("Pictures", classes="s-label"),
-                                    Select(modes, value=cfg["graphics"] if cfg["graphics"] in ("auto", *term.GRAPHICS_MODES)
+                                    Select(modes, value=cfg["graphics"] if cfg["graphics"] in [m for _, m in modes]
                                            else "auto", allow_blank=False, id="gfx-mode", compact=True),
                                     Button("Clear icon cache", id="gfx-clear", compact=True)))
         sw = Horizontal(classes="sw-row")
@@ -150,7 +156,7 @@ class SettingsPane(LazyPage, VerticalScroll):
                                      Button("Delete voice", id="tts-delete", compact=True),
                                      Button("Install Piper", id="tts-install", compact=True), id="tts-get-row"))
         voice.compose_add_child(ProgressBar(id="tts-progress", show_eta=False))
-        voice.compose_add_child(Static(id="tts-status", classes="hint"))
+        voice.compose_add_child(Static(PROGRAM_VOICES if system.PROGRAM else "", id="tts-status", classes="hint"))
         yield voice
         # ------------------------------------------------------- calendar
         calp = Vertical(id="set-cal", classes="panel")
@@ -351,6 +357,7 @@ class SettingsPane(LazyPage, VerticalScroll):
         piper = tts.ENGINES["piper"]
         self.query_one("#tts-delete", Button).display = e is piper and bool(voices)
         self.query_one("#tts-install", Button).display = not piper.available()
+        self.query_one("#tts-get-row").display = not system.PROGRAM     # saintd.exe cannot take in Piper
         self.query_one("#tts-download", Button).display = piper.available()
         self.query_one("#tts-get", Select).display = piper.available()
 
@@ -477,6 +484,9 @@ class SettingsPane(LazyPage, VerticalScroll):
                 self.app.call_from_thread(self.query_one("#tts-status", Static).update, msg)
             except Exception:
                 pass
+        if system.PROGRAM:
+            say(PROGRAM_VOICES)
+            return
         say("Installing Piper (about 60 MB of Python packages)… this takes a minute.")
         try:
             r = subprocess.run([sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-q",
@@ -514,7 +524,10 @@ class SettingsPane(LazyPage, VerticalScroll):
         n, size = icons.cache_size()
         t.append(f"\n  {'Icon cache':<15} ", style="bold dim")
         t.append(f"{n} icons, {size / 1048576:.1f} MB")
-        t.append("\n  Run  saintd --terminal  for the full terminal report.", style="dim")
+        if term.in_window():
+            t.append("\n  saintd draws this window itself, with true images as in Kitty and Ghostty.", style="dim")
+        else:
+            t.append("\n  Run  saintd --terminal  for the full terminal report.", style="dim")
         self.query_one("#term-report", Static).update(t)
 
     def fill_api_table(self) -> None:

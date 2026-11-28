@@ -9,7 +9,8 @@ from Wikipedia or OrthodoxWiki, feast days on the New and Old Calendars, and the
 day's fast and readings with the Gospel's text, the saints, a saint of the day, and the feasts and fasts ahead.
 Everything is in English — Russian-calendar entries and non-English articles are translated. In terminals that show
 true images (Kitty, Ghostty and Sixel terminals) the icons stand in a gilded kiot and the double-headed eagle of the
-Church of Greece heads the tab column.
+Church of Greece heads the tab column. On Windows it also comes as **saintd.exe**, a program that opens in a window
+of its own and looks as it does in Kitty and Ghostty, with nothing to install.
 
 ```
 F1 Home  F2 Search  F3 Focus  F4 Settings  P listen  ? Help  / search box  Esc tab column  ^B build  ^Q quit
@@ -26,6 +27,19 @@ F1 Home  F2 Search  F3 Focus  F4 Settings  P listen  ? Help  / search box  Esc t
 All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ---
+
+## What's new in 2.6
+
+- **saintd.exe: a window of its own on Windows.** Download `saintd.exe` and double-click it: Saint Directory opens in
+  its own window, with no Python, terminal or installer, and looks as it does in Kitty and Ghostty on Linux — the
+  same screens, colours and box lines, the icons in their gilded kiot, the eagle and its pulse of light, in the
+  DejaVu Sans Mono font. Keys and the mouse work as in a terminal; **Ctrl+=** and **Ctrl+-** (or Ctrl and the wheel)
+  make the text larger or smaller, **F11** fills the screen, **Ctrl+V** pastes, and the window keeps its size, place
+  and text size. See [The Windows program](#the-windows-program-saintdexe).
+- **`saintd --window`** opens the same window from an installed saintd on Linux, macOS and Windows (it needs Python's
+  tkinter).
+- **The blank icon's cross.** The three-bar cross on the icon blank of a saint without an initial is drawn in a font
+  that has it, so it no longer shows as an empty box where the serif font lacks it.
 
 ## What's new in 2.5
 
@@ -78,8 +92,9 @@ All twelve colour schemes: [docs/themes.png](docs/themes.png)
 
 ## Install
 
-You need **Python 3.10 or newer** and `git`. No git? Click **Code → Download ZIP** at the top of this page, unzip it,
-and run the installer from the unzipped folder instead of cloning.
+You need **Python 3.10 or newer** and `git` (on Windows, [saintd.exe](#the-windows-program-saintdexe) needs
+neither). No git? Click **Code → Download ZIP** at the top of this page, unzip it, and run the installer from the
+unzipped folder instead of cloning.
 
 ### Linux
 
@@ -112,6 +127,23 @@ saintd
 
 Kitty and Ghostty show the icons as true pictures; Terminal.app shows them as colour blocks.
 
+### The Windows program (saintd.exe)
+
+The easiest way on Windows 10 and 11: one file, nothing to install, and saintd in a window of its own.
+
+1. Open the [latest release](https://github.com/BravoDeltaThr33/saintd/releases/latest) and click **saintd.exe**
+   under **Assets** to download it.
+2. Move it wherever you like (your Desktop, say) and double-click it. The first start takes a few seconds while it
+   unpacks itself.
+3. If Windows says **"Windows protected your PC"** (it says so about programs it doesn't know yet), click **More
+   info**, then **Run anyway**.
+
+It keeps the directory and settings in the same AppData folders as an installed saintd, so the two share them. It
+reads aloud with the voices that come with Windows; Piper's natural voices need saintd installed as below. To update,
+download the new `saintd.exe` over the old one; to remove it, delete it (and the folders under
+[Where saintd keeps its files](#where-saintd-keeps-its-files) to remove the directory too). Each release lists the
+file's SHA-256 checksum in `saintd.exe.sha256`.
+
 ### Windows
 
 In **Windows Terminal** (it comes with Windows 11; on Windows 10 get it from the Microsoft Store), install Python and
@@ -129,8 +161,8 @@ cd saintd
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-Open a new terminal and start it with `saintd`. (`-ExecutionPolicy Bypass` lets this one script run; Windows
-refuses to run scripts otherwise.)
+Open a new terminal and start it with `saintd` (or `saintd --window` for saintd's own window). (`-ExecutionPolicy
+Bypass` lets this one script run; Windows refuses to run scripts otherwise.)
 
 ### What the installers do
 
@@ -166,6 +198,7 @@ the Kitty graphics query, the cell size and the device attributes) and picks the
 |---|---|---|
 | **Kitty** 0.28+ (Linux, macOS) | True images (Kitty graphics) | Best quality |
 | **Ghostty** 1.0+ (Linux, macOS) | True images (Kitty graphics) | Best quality |
+| **saintd's own window** (`saintd.exe`, `saintd --window`) | True images (drawn as Kitty draws them) | Best quality, on Windows too |
 | WezTerm, foot, Konsole 22.04+, mlterm, xterm `-ti vt340`, iTerm2, Windows Terminal 1.22+ | True images (Sixel) | Detected from the terminal's answer |
 | GNOME Terminal, Xfce Terminal, Tilix, Alacritty, Terminal.app, the Windows console, others with 24-bit or 256 colours | Colour-block mosaic | Two pixels per character cell |
 | Inside tmux / screen | Colour-block mosaic | Multiplexers don't pass images on reliably |
@@ -310,6 +343,15 @@ above work.
 | **O** | Open the saint's page in your web browser |
 | **B** | Back to the search results or the day's list, on the same saint |
 
+| In saintd's own window (`saintd.exe`, `saintd --window`) | |
+|---|---|
+| **Ctrl+=** / **Ctrl+-** (or Ctrl and the wheel) | Larger / smaller text |
+| **Ctrl+0** | The usual text size |
+| **F11** | Full screen (again: back to the window) |
+| **Ctrl+V** or **Shift+Insert** | Paste |
+
+Closing the window quits saintd, as **Ctrl+Q** does; the window keeps its size, place and text size for next time.
+
 ### Colour schemes
 
 | Theme | Palette |
@@ -390,6 +432,7 @@ translator is used for whole non-English Wikipedia articles and Russian lives. C
 
 ```bash
 saintd                 # start the app
+saintd --window        # start it in a window of its own instead of the terminal (needs tkinter)
 saintd --terminal      # what saintd detects about this terminal (name, version, colours, pictures)
 saintd --sync          # build or refresh the directory, then exit
 saintd --rebuild       # rebuild from scratch (reuses downloaded data)
@@ -405,10 +448,12 @@ saintd --version
 |---|---|---|
 | The directory, lives, articles, saved saints, downloaded API responses and translations (one SQLite file, about 50 MB) | `~/.local/share/saintd/saints.db` | `%LOCALAPPDATA%\saintd\saints.db` |
 | Your settings (theme, calendar, pictures, sources, translator, contact) | `~/.config/saintd/config.json` | `%APPDATA%\saintd\config.json` |
+| The window's size, place and text size (`saintd.exe`, `saintd --window`) | `~/.config/saintd/window.json` | `%APPDATA%\saintd\window.json` |
 | Downloaded icons (safe to delete) | `~/.cache/saintd/icons/` | `%LOCALAPPDATA%\saintd\Cache\icons\` |
 | Downloaded Piper voices | `~/.local/share/saintd/voices/` | `%LOCALAPPDATA%\saintd\voices\` |
 | The program itself (pipx install) | pipx's folder (`pipx list` shows it), started by `~/.local/bin/saintd` | the same, started by `%USERPROFILE%\.local\bin\saintd.exe` |
 | The program itself (installed without pipx) | `~/.local/share/saintd-venv/`, started by `~/.local/bin/saintd` | `%USERPROFILE%\.local\share\saintd-venv\`, started by `%USERPROFILE%\.local\bin\saintd.exe` |
+| The Windows program | — | `saintd.exe` wherever you put it (it unpacks itself into a temporary folder while it runs) |
 
 Copy `saints.db` to back up your linked directory and saved saints. Set `SAINTD_HOME` to keep data, settings and
 cache somewhere else (on Linux and macOS the `XDG_DATA_HOME`, `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` variables are
@@ -441,7 +486,13 @@ followed too).
 - **Odd symbols or a plain look on Windows** — use Windows Terminal rather than the old console window, or choose
   **Plain ASCII** symbols in Settings.
 - **The layout looks cramped** — the dashboards appear from about 150×34 characters; maximise the window or use a
-  smaller font. The layout follows the window as you resize it.
+  smaller font (in saintd's own window, **Ctrl+-**). The layout follows the window as you resize it.
+- **saintd.exe does not start, or your antivirus stops it** — programs made with PyInstaller (Python and saintd in
+  one file) are sometimes taken for something worse by antivirus programs; compare the file with the checksum in
+  `saintd.exe.sha256` on the release page, and allow it. If the window closes with an error, the details are in
+  `%LOCALAPPDATA%\saintd\window-error.log`.
+- **`saintd --window` says it needs tkinter** — install Python's Tk support: `sudo apt install python3-tk` on Debian
+  and Ubuntu, `brew install python-tk` on macOS (the python.org installers for macOS and Windows include it).
 
 ---
 
@@ -463,7 +514,14 @@ eagle and the kiot), `wdsaints.py` (Orthodox saints from Wikidata),
 `themes.py` (colour schemes and liturgical colours), `paschalion.py` (Pascha, feasts and fasts), `tts.py` (reading
 aloud: engines, voices, players and the reader), `piper_worker.py` (Piper in its own process), `narration.py` (what is
 read), `ru.py` (Russian → English), `heuristics.py` (titles → facts), `article.py` (the Focus article),
-`translate.py`, `db.py`, `net.py` (rate-limited HTTP), and `ui/` with `saintd.tcss` for the Textual interface.
+`translate.py`, `db.py`, `net.py` (rate-limited HTTP), `ui/` with `saintd.tcss` for the Textual interface, and
+`window/`, saintd's own window (`saintd --window`, `saintd.exe`): a Textual driver (`driver.py`) that hands the app's
+output to a small terminal (`vt.py`: the cell grid, colours and pictures sent by the Kitty graphics protocol), which
+Pillow paints (`paint.py`, with fonts from `fonts.py`; box lines, blocks and sextants are drawn, not taken from a
+font) into a tkinter window (`tkwin.py`) that sends keys and the mouse back as Kitty does (`keys.py`).
+
+The GitHub Actions check builds `saintd.exe` with PyInstaller on Windows, starts it and checks the picture of its
+window, and attaches it to each published release.
 
 ---
 
@@ -474,3 +532,8 @@ any church, parish or publisher, or by any of the sources it reads. Their texts,
 owners and are shown under each source's own terms, credited and linked (see
 [Where the information comes from](#where-the-information-comes-from)). Found a mistake in a saint's entry, or run
 one of the sources and want something changed? Please open an issue.
+
+`saintd.exe` also holds Python and the open-source packages saintd is built on (Textual, Rich, Pillow, httpx and
+those they use), each under its own licence, kept inside the program with them, and the
+[DejaVu fonts](https://dejavu-fonts.github.io/) (DejaVu Sans Mono, DejaVu Sans and DejaVu Serif, © Bitstream, Inc.
+and the DejaVu authors), which are free to share under the [DejaVu fonts licence](https://dejavu-fonts.github.io/License.html).

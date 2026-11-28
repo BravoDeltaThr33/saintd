@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saint-directory"
-version = "2.5.0"
+version = "2.6.0"
 description = "Saint Directory (saintd): a retro terminal guide to the saints of the Eastern Orthodox Church"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -38,7 +38,7 @@ Issues = "https://github.com/BravoDeltaThr33/saintd/issues"
 saintd = "saintd.cli:main"
 
 [tool.setuptools]
-packages = ["saintd", "saintd.ui", "saintd.assets"]
+packages = ["saintd", "saintd.ui", "saintd.window", "saintd.assets"]
 
 [tool.setuptools.package-data]
 saintd = ["*.tcss"]
