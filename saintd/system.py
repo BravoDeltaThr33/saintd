@@ -10,6 +10,7 @@ MACOS = sys.platform == "darwin"
 LINUX = not (WINDOWS or MACOS)          # and the other Unix systems, which follow Linux
 
 NAME = "Windows" if WINDOWS else "macOS" if MACOS else "Linux"
+PROGRAM = bool(getattr(sys, "frozen", False))   # saintd.exe, the Windows program (Python and saintd in one file)
 
 
 def pick(linux: str, macos: str, windows: str) -> str:

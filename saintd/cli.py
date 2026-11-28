@@ -60,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reset", action="store_true", help="delete the local directory and caches, then exit")
     p.add_argument("--terminal", action="store_true",
                    help="show what saintd detects about this terminal (name, version, colours, graphics), then exit")
+    p.add_argument("--window", action="store_true",
+                   help="open saintd in a window of its own instead of the terminal (needs tkinter)")
     args = p.parse_args(argv)
 
     if args.terminal:
@@ -103,6 +105,14 @@ def main(argv: list[str] | None = None) -> int:
         finally:
             ctx.close()
         return 0
+
+    if args.window:
+        try:
+            from .window.tkwin import run as run_window
+        except ImportError as err:          # Python without tkinter (or Pillow's support for it)
+            print(f"saintd --window needs tkinter: {err}", file=sys.stderr)
+            return 1
+        return run_window()
 
     from .app import run
     return run()

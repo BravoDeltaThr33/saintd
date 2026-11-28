@@ -138,6 +138,7 @@ class SaintDirectoryApp(App):
         self._size_classes(event.size)
 
     def on_mount(self) -> None:
+        self._ui_thread = threading.current_thread()
         # keep direct references: query_one() searches the *active* screen,
         # which is a dialog while one is open
         self.w_screen = self.screen
@@ -641,8 +642,9 @@ class SaintDirectoryApp(App):
 
     # ------------------------------------------------------------ reading aloud
     def _reader_emit(self, ev: str) -> None:
-        """From the reader (any thread) to the interface thread."""
-        if threading.current_thread() is threading.main_thread():
+        """From the reader (any thread) to the interface thread (the main thread in a
+        terminal, a thread of its own in saintd's window)."""
+        if threading.current_thread() is getattr(self, "_ui_thread", threading.main_thread()):
             self.call_later(self.on_reader_event, ev)
             return
         try:

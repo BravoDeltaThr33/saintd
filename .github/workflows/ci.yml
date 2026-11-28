@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -12,6 +14,7 @@ permissions:
 jobs:
   install:
     name: ${{ matrix.os }}, Python ${{ matrix.python }}, ${{ matrix.route }}
+    if: github.event_name != 'release'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -91,7 +94,7 @@ jobs:
 
       - name: eSpeak NG and aplay for the Linux check
         if: runner.os == 'Linux'
-        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends espeak-ng alsa-utils
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends espeak-ng alsa-utils xvfb
 
       - name: Voices, players, Piper and the interface
         run: |
@@ -261,3 +264,178 @@ jobs:
           print("the interface ran without an error")
           EOF
           "$SAINTD_PY" -I "$RUNNER_TEMP/smoke.py"
+
+      - name: saintd's own window (saintd --window)
+        run: |
+          export SAINTD_HOME="$RUNNER_TEMP/saintd-window"
+          "$SAINTD_PY" -I - <<'EOF'
+          import json, time
+          from pathlib import Path
+          from saintd import config
+          from saintd.core import Context
+          from saintd.sync import BUILD_VERSION
+          (Path(config.config_dir()) / "config.json").write_text(json.dumps(
+              {"asked_contact": True, "auto_enrich": False, "tts_asked_voice": True}), encoding="utf-8")
+          ctx = Context()
+          ctx.db.set_meta("built_at", time.time())
+          ctx.db.set_meta("build_version", BUILD_VERSION)
+          ctx.close()
+          EOF
+          export HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9
+          export SAINTD_SNAPSHOT="$RUNNER_TEMP/saintd-window.png" SAINTD_WINDOW_SIZE=120x36
+          display=()
+          if [ "$RUNNER_OS" = Linux ]; then display=(xvfb-run -a -s "-screen 0 1600x1000x24"); fi
+          "${display[@]}" "$SAINTD_PY" -I -c \
+            "import subprocess, sys; sys.exit(subprocess.run(sys.argv[1:], timeout=180).returncode)" "$SAINTD_EXE" --window
+          "$SAINTD_PY" -I - <<'EOF'
+          import os
+          from PIL import Image
+          from saintd.config import data_dir
+          err = data_dir() / "window-error.log"
+          assert not err.exists(), err.read_text(encoding="utf-8")
+          im = Image.open(os.environ["SAINTD_SNAPSHOT"]).convert("RGB")
+          colours = len(im.getcolors(1 << 20) or [])
+          cols, rows = (int(n) for n in os.environ["SAINTD_WINDOW_SIZE"].split("x"))
+          print(f"the window's picture: {im.width}x{im.height} for {cols}x{rows} cells, {colours} colours")
+          assert im.width >= 6 * cols and im.height >= 12 * rows, "the window is smaller than asked"
+          assert colours > 200, "the window looks empty"
+          EOF
+
+  exe:
+    name: saintd.exe, the Windows program
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Build saintd.exe
+        run: |
+          python -m pip install --disable-pip-version-check -q . "pyinstaller>=6.10,<7"
+          work="$(cygpath -u "$RUNNER_TEMP")/exe"
+          mkdir -p "$work/fonts" "$work/licenses"
+          cd "$work"
+          # the DejaVu fonts (free to share, with their licence), so the window looks as saintd does on Linux
+          curl -sSfL -o dejavu.tar.bz2 \
+            https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2
+          echo "fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7  dejavu.tar.bz2" | sha256sum -c -
+          python -I - <<'EOF'
+          import shutil
+          import sys
+          import tarfile
+          from pathlib import Path
+          from PIL import Image
+          import saintd
+
+          want = ["DejaVuSansMono", "DejaVuSansMono-Bold", "DejaVuSansMono-Oblique", "DejaVuSansMono-BoldOblique",
+                  "DejaVuSans", "DejaVuSans-Bold", "DejaVuSerif-Bold"]
+          with tarfile.open("dejavu.tar.bz2") as t:
+              for name in want:
+                  data = t.extractfile(f"dejavu-fonts-ttf-2.37/ttf/{name}.ttf").read()
+                  Path(f"fonts/{name}.ttf").write_bytes(data)
+              Path("fonts/DejaVu-LICENSE.txt").write_bytes(t.extractfile("dejavu-fonts-ttf-2.37/LICENSE").read())
+          # Python's own licence goes with it (the packages' licences come with their metadata)
+          shutil.copy(Path(sys.base_prefix) / "LICENSE.txt", "licenses/Python-LICENSE.txt")
+
+          # the program's icon: the eagle of the tab column
+          eagle = Image.open(Path(saintd.__file__).parent / "assets" / "eagle.png").convert("RGBA")
+          side = max(eagle.size)
+          square = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+          square.paste(eagle, ((side - eagle.width) // 2, (side - eagle.height) // 2))
+          square.save("saintd.ico", sizes=[(s, s) for s in (16, 20, 24, 32, 40, 48, 64, 128, 256)])
+
+          # the version shown in the program's Properties
+          v = tuple(int(x) for x in saintd.__version__.split(".")[:3]) + (0,)
+          Path("version.txt").write_text(f"""VSVersionInfo(
+            ffi=FixedFileInfo(filevers={v}, prodvers={v}),
+            kids=[StringFileInfo([StringTable('040904B0', [
+              StringStruct('FileDescription', 'Saint Directory'),
+              StringStruct('ProductName', 'Saint Directory'),
+              StringStruct('FileVersion', '{saintd.__version__}'),
+              StringStruct('ProductVersion', '{saintd.__version__}'),
+              StringStruct('OriginalFilename', 'saintd.exe'),
+              StringStruct('LegalCopyright', 'Copyright (c) 2026 BravoDeltaThr33, MIT License')])]),
+              VarFileInfo([VarStruct('Translation', [1033, 1200])])])
+          """, encoding="utf-8")
+          EOF
+          printf 'from saintd.window import exe_main\nraise SystemExit(exe_main())\n' > saintd-exe.py
+          python -m PyInstaller --noconfirm --clean --log-level WARN --onefile --windowed --name saintd \
+            --icon saintd.ico --version-file version.txt --add-data "fonts;fonts" --add-data "licenses;licenses" \
+            --collect-data saintd --collect-submodules saintd --collect-submodules textual --collect-data textual \
+            --recursive-copy-metadata saint-directory --hidden-import PIL._tkinter_finder --hidden-import winsound \
+            saintd-exe.py
+          ls -l dist/saintd.exe
+          (cd dist && sha256sum saintd.exe > saintd.exe.sha256 && cat saintd.exe.sha256)
+
+      - name: Start saintd.exe and take its picture
+        run: |
+          cd "$(cygpath -u "$RUNNER_TEMP")/exe"
+          export SAINTD_HOME="$(cygpath -w "$RUNNER_TEMP/exe-home")"
+          python -I - <<'EOF'
+          import json, time
+          from pathlib import Path
+          from saintd import config
+          from saintd.core import Context
+          from saintd.sync import BUILD_VERSION
+          (Path(config.config_dir()) / "config.json").write_text(json.dumps(
+              {"asked_contact": True, "auto_enrich": False, "tts_asked_voice": True}), encoding="utf-8")
+          ctx = Context()
+          ctx.db.set_meta("built_at", time.time())
+          ctx.db.set_meta("build_version", BUILD_VERSION)
+          ctx.close()
+          EOF
+          # no network: every request fails at once, which the program must take calmly
+          export HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9
+          export SAINTD_SNAPSHOT="$(cygpath -w "$PWD/dist/saintd-exe.png")" SAINTD_WINDOW_SIZE=140x42
+          start=$(date +%s)
+          timeout 180 ./dist/saintd.exe && code=0 || code=$?
+          echo "saintd.exe ended with $code after $(( $(date +%s) - start )) s"
+          err="$(cygpath -u "$SAINTD_HOME")/data/window-error.log"
+          if [ -f "$err" ]; then cat "$err"; fi
+          test "$code" = 0 && test ! -f "$err"
+          python -I - <<'EOF'
+          import os
+          from PIL import Image
+          im = Image.open(os.environ["SAINTD_SNAPSHOT"]).convert("RGB")
+          colours = len(im.getcolors(1 << 20) or [])
+          cols, rows = (int(n) for n in os.environ["SAINTD_WINDOW_SIZE"].split("x"))
+          print(f"the window's picture: {im.width}x{im.height} for {cols}x{rows} cells, {colours} colours")
+          assert im.width >= 6 * cols and im.height >= 12 * rows, "the window is smaller than asked"
+          assert colours > 200, "the window looks empty"
+          EOF
+          # saintd plays speech with its own Python, which in the program is saintd.exe itself:
+          # that start must play the file and end, not open a second window
+          python -I -c "import wave; w = wave.open('silence.wav', 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(b'\0\0' * 8000); w.close()"
+          timeout 60 ./dist/saintd.exe -I -c "import sys, winsound; winsound.PlaySound(sys.argv[1], winsound.SND_FILENAME | winsound.SND_NODEFAULT)" silence.wav && code=0 || code=$?
+          echo "the sound player ended with $code (0 played; 1 this computer has no sound device)"
+          test "$code" = 0 || test "$code" = 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: saintd-exe
+          path: |
+            ${{ runner.temp }}/exe/dist/saintd.exe
+            ${{ runner.temp }}/exe/dist/saintd.exe.sha256
+            ${{ runner.temp }}/exe/dist/saintd-exe.png
+          if-no-files-found: error
+
+  exe-release:
+    name: Attach saintd.exe to the release
+    if: github.event_name == 'release'
+    needs: exe
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: saintd-exe
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" saintd.exe saintd.exe.sha256 --clobber --repo "${{ github.repository }}"
